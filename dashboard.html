@@ -120,18 +120,23 @@
 
           html += `
             <div class="bg-gray-900 p-4 rounded-md border border-gray-700 space-y-1">
-              <h4 class="text-yellow-400 font-semibold text-lg">${match.title || "Untitled Match"}</h4>
-              <p class="text-gray-300 text-sm">Date & Time: ${formattedDate}</p>
-              <p class="text-gray-300 text-sm">Total Price: ৳${match.totalPrice || 'N/A'}</p>
-              <p class="text-gray-300 text-sm">Per Goal: ৳${match.perGoal || 'N/A'}</p>
-              <p class="text-gray-300 text-sm">Entry Fee: ৳${match.entryFee || 'N/A'}</p>
-              <p class="text-purple-400 text-sm font-semibold">Slot: ${slot} / ${slotLimit}</p>
-              ${
-                isFull
-                  ? `<button disabled class="mt-2 w-full bg-gray-700 text-white font-semibold py-1.5 rounded cursor-not-allowed">Match Full</button>`
-                  : `<button onclick="showTeamInput('${matchId}', ${slot}, ${slotLimit}, ${match.entryFee || 0})" class="mt-2 w-full bg-yellow-400 text-black font-semibold py-1.5 rounded hover:bg-yellow-300 transition">Join</button>`
-              }
-            </div>
+  <h4 class="text-yellow-400 font-semibold text-lg">${match.title || "Untitled Match"}</h4>
+  <p class="text-gray-300 text-sm">Date & Time: ${formattedDate}</p>
+  <p class="text-gray-300 text-sm">Total Price: ৳${match.totalPrice || 'N/A'}</p>
+  <p class="text-gray-300 text-sm">Per Goal: ৳${match.perGoal || 'N/A'}</p>
+  <p class="text-gray-300 text-sm">Entry Fee: ৳${match.entryFee || 'N/A'}</p>
+  
+  <!-- Flex container for slot and button -->
+  <div class="flex items-center justify-between mt-2">
+    <p class="text-purple-400 text-sm font-semibold">Slot: ${slot} / ${slotLimit}</p>
+    ${
+      isFull
+        ? `<button disabled class="ml-4 bg-gray-700 text-white font-semibold py-1.5 px-4 rounded cursor-not-allowed">Match Full</button>`
+        : `<button onclick="showTeamInput('${matchId}', ${slot}, ${slotLimit}, ${match.entryFee || 0})" class="ml-4 bg-yellow-400 text-black font-semibold py-1.5 px-4 rounded hover:bg-yellow-300 transition">Join</button>`
+    }
+  </div>
+</div>
+
           `;
         });
 
