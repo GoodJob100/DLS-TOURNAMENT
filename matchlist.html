@@ -7,30 +7,38 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
-<body class="bg-gray-100 min-h-screen p-6">
+<body class="bg-gray-100 min-h-screen flex flex-col">
 
-  <h1 class="text-2xl font-bold mb-6 text-blue-700">Match List</h1>
+  <header class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-30">
+    <h1 class="text-xl font-bold">Matches List</h1>
+    <a href="admin.html" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-200 transition">
+      Back to Admin Panel
+    </a>
+  </header>
 
-  <div class="bg-white rounded shadow p-4 overflow-auto max-h-[600px]">
-    <table class="w-full text-sm border border-gray-300 rounded min-w-[600px]">
-      <thead class="bg-gray-100 sticky top-0 z-10">
-        <tr>
-          <th class="p-3 border border-gray-300 text-left">Title</th>
-          <th class="p-3 border border-gray-300 text-left">Date & Time</th>
-          <th class="p-3 border border-gray-300 text-right">Total Price (৳)</th>
-          <th class="p-3 border border-gray-300 text-right">Per Goal (৳)</th>
-          <th class="p-3 border border-gray-300 text-right">Entry Fee (৳)</th>
-        </tr>
-      </thead>
-      <tbody id="matchesTableBody">
-        <tr><td colspan="5" class="p-4 text-center text-gray-500">Loading matches...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <main class="p-4 md:p-6 flex-grow">
+    <div class="bg-white shadow rounded p-4">
+      <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[600px]">
+        <thead class="bg-gray-100 sticky top-0 z-10">
+          <tr>
+            <th class="p-3 border border-gray-300 text-left">Title</th>
+            <th class="p-3 border border-gray-300 text-left">Date & Time</th>
+            <th class="p-3 border border-gray-300 text-left">Total Price (৳)</th>
+            <th class="p-3 border border-gray-300 text-left">Per Goal (৳)</th>
+            <th class="p-3 border border-gray-300 text-left">Entry Fee (৳)</th>
+          </tr>
+        </thead>
+        <tbody id="matchesTableBody">
+          <tr><td colspan="5" class="p-4 text-center text-gray-500">Loading matches...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
@@ -43,34 +51,40 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
+
     const matchesTableBody = document.getElementById("matchesTableBody");
+
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        loadMatches();
+      }
+    });
 
     async function loadMatches() {
       try {
         const matchesCol = collection(db, "matches");
-        const matchesSnapshot = await getDocs(matchesCol);
+        const q = query(matchesCol, orderBy("dateTime", "asc"));
+        const snapshot = await getDocs(q);
 
-        if (matchesSnapshot.empty) {
+        if (snapshot.empty) {
           matchesTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center">No matches found.</td></tr>`;
           return;
         }
 
         let rowsHtml = "";
-        matchesSnapshot.forEach(docSnap => {
+        snapshot.forEach(docSnap => {
           const match = docSnap.data();
-
-          // dateTime string formatting (optional)
-          let dt = match.dateTime;
-          let formattedDate = dt ? new Date(dt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "N/A";
-
           rowsHtml += `
             <tr class="hover:bg-gray-50 border-t">
-              <td class="p-3 border border-gray-300 max-w-xs break-words">${match.title || "N/A"}</td>
-              <td class="p-3 border border-gray-300">${formattedDate}</td>
-              <td class="p-3 border border-gray-300 text-right">${match.totalPrice?.toFixed(2) || "0.00"}</td>
-              <td class="p-3 border border-gray-300 text-right">${match.perGoal?.toFixed(2) || "0.00"}</td>
-              <td class="p-3 border border-gray-300 text-right">${match.entryFee?.toFixed(2) || "0.00"}</td>
+              <td class="p-3 border border-gray-300">${match.title || "N/A"}</td>
+              <td class="p-3 border border-gray-300">${new Date(match.dateTime).toLocaleString() || "N/A"}</td>
+              <td class="p-3 border border-gray-300">${match.totalPrice || 0}</td>
+              <td class="p-3 border border-gray-300">${match.perGoal || 0}</td>
+              <td class="p-3 border border-gray-300">${match.entryFee || 0}</td>
             </tr>
           `;
         });
@@ -82,8 +96,6 @@
         console.error("Error loading matches:", error);
       }
     }
-
-    loadMatches();
   </script>
 </body>
 </html>
