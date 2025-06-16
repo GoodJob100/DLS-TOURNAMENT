@@ -13,7 +13,7 @@
     .swal2-timer-progress-bar {
       background: #facc15 !important;
     }
-    
+
     .glow-yellow {
       box-shadow: 0 0 5px rgba(234, 179, 8, 0.5);
     }
@@ -83,66 +83,50 @@
       </button>
       </a>
     </div>
-    </div>
   </main>
-  
 
-    <!-- Firebase and JS -->
+  <!-- Firebase and JS -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { renderDailyBonusButton } from "./dailyBonus.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyCkYWvYNsg2-CR88Js6gcP2nXfvwI4TW30",
+      authDomain: "bdwork-346d3.firebaseapp.com",
+      projectId: "bdwork-346d3",
+      storageBucket: "bdwork-346d3.appspot.com",
+      messagingSenderId: "900963179093",
+      appId: "1:900963179093:web:81e42d67bb31d603cc92dc",
+      measurementId: "G-FM1YJ8E5GK"
+    };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCkYWvYNsg2-CR88Js6gcP2nXfvwI4TW30",
-      authDomain: "bdwork-346d3.firebaseapp.com",
-      projectId: "bdwork-346d3",
-      storageBucket: "bdwork-346d3.appspot.com",
-      messagingSenderId: "900963179093",
-      appId: "1:900963179093:web:81e42d67bb31d603cc92dc",
-      measurementId: "G-FM1YJ8E5GK"
-    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return window.location.href = "login.html";
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return window.location.href = "login.html";
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
 
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        document.getElementById("userName").innerText = data.username || "No username";
-        document.getElementById("userNameDisplay").innerText = data.username || "No username";
-        document.getElementById("userPhone").innerText = data.phone || "N/A";
-        document.getElementById("userEmail").innerText = data.email || "N/A";
-        document.getElementById("mainBalance").innerText = `৳${data.balance || 0}`;
-        document.getElementById("accountStatus").innerHTML = data.isPro
-  ? `<div class="inline-flex items-center gap-1 bg-yellow-400 bg-opacity-40 text-yellow-400 text-xs font-medium px-3 py-0.5 rounded-full border border-yellow-400">
-      <i class="fas fa-star text-sm"></i> Pro Member
-    </div>`
-  : `<div class="inline-flex items-center gap-1 bg-purple-600 bg-opacity-40 text-purple-300 text-xs font-medium px-3 py-0.5 rounded-full border border-purple-500">
-      <i class="fas fa-bolt text-sm"></i> Regular Member
-    </div>`;
+        document.getElementById("userName").innerText = data.username || "No username";
+        document.getElementById("mainBalance").innerText = `৳${data.balance || 0}`;
 
-        if (data.isPro === true) {
-          renderDailyBonusButton("dailyBonusContainer");
-        }
-        document.getElementById("loadingOverlay").style.display = "none";
-      }
-    });
+        document.getElementById("loadingOverlay").style.display = "none";
+      }
+    });
 
-    window.logout = async function () {
-      await signOut(auth);
-      window.location.href = "login.html";
-    };
+    window.logout = async function () {
+      await signOut(auth);
+      window.location.href = "login.html";
+    };
 
-    window.toggleProfile = function () {
-      document.getElementById("profileModal").classList.toggle("hidden");
-    };
+    window.toggleProfile = function () {
+      document.getElementById("profileModal").classList.toggle("hidden");
+    };
   </script>
 </body>
 </html>
