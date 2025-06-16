@@ -148,16 +148,21 @@
     window.joinMatch = async (matchId, currentSlot, slotLimit) => {
       if (!currentUser) return;
 
+      const userId = currentUser.uid;
+      const participantRef = doc(db, "matches", matchId, "participants", userId);
+      const participantSnap = await getDoc(participantRef);
+
+      if (participantSnap.exists()) {
+        Swal.fire("Already Joined", "You have already joined this match.", "info");
+        return;
+      }
+
       if (currentSlot >= slotLimit) {
         Swal.fire("Slot Full", "Sorry, this match is already full.", "warning");
         return;
       }
 
       try {
-        const userId = currentUser.uid;
-
-        // Optional: prevent duplicate joins
-        const participantRef = doc(db, "matches", matchId, "participants", userId);
         await setDoc(participantRef, {
           joinedAt: new Date(),
           uid: userId
