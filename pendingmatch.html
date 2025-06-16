@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pending Matches - Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+  <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">Pending Matches</h1>
+
+  <div id="pendingMatchesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Match cards will be inserted here -->
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      getDocs,
+      doc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Your Firebase config here
+    const firebaseConfig = {
+      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
+      authDomain: "dlstournament-31ac1.firebaseapp.com",
+      projectId: "dlstournament-31ac1",
+      storageBucket: "dlstournament-31ac1.appspot.com",
+      messagingSenderId: "874377019055",
+      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
+      measurementId: "G-0DGFJEV6GL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const pendingMatchesContainer = document.getElementById("pendingMatchesContainer");
+
+    async function loadPendingMatches() {
+      pendingMatchesContainer.innerHTML = `<p class="col-span-full text-center text-gray-600">Loading pending matches...</p>`;
+
+      try {
+        const matchesCol = collection(db, "matches");
+        const q = query(matchesCol, where("status", "==", "pending"));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          pendingMatchesContainer.innerHTML = `<p class="col-span-full text-center text-gray-500">No pending matches found.</p>`;
+          return;
+        }
+
+        let html = "";
+
+        querySnapshot.forEach(docSnap => {
+          const match = docSnap.data();
+          const matchId = docSnap.id;
+          const dateTime = new Date(match.datetime.seconds * 1000).toLocaleString();
+
+          html += `
+            <div class="bg-white rounded shadow p-5 flex flex-col justify-between">
+              <div>
+                <h3 class="text-xl font-semibold mb-3 text-blue-700">Match ID: ${matchId}</h3>
+                <p><strong>Date & Time:</strong> ${dateTime}</p>
+                <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
+                <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
+                <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
+              </div>
+              <button data-id="${matchId}" class="winBtn mt-6 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold transition">
+                Mark as Win
+              </button>
+            </div>
+          `;
+        });
+
+        pendingMatchesContainer.innerHTML = html;
+
+        document.querySelectorAll(".winBtn").forEach(button => {
+          button.addEventListener("click", async (e) => {
+            const id = e.target.getAttribute("data-id");
+            if(confirm("Are you sure you want to mark this match as Win?")) {
+              await markMatchAsWin(id);
+            }
+          });
+        });
+
+      } catch (error) {
+        pendingMatchesContainer.innerHTML = `<p class="col-span-full text-center text-red-600">Error loading matches: ${error.message}</p>`;
+        console.error("Error loading pending matches:", error);
+      }
+    }
+
+    async function markMatchAsWin(matchId) {
+      try {
+        const matchRef = doc(db, "matches", matchId);
+        await updateDoc(matchRef, { status: "win" });
+        alert("Match marked as Win!");
+        loadPendingMatches(); // Refresh the list
+      } catch (error) {
+        alert("Failed to update match status.");
+        console.error("Error updating match:", error);
+      }
+    }
+
+    loadPendingMatches();
+  </script>
+
+</body>
+</html>
