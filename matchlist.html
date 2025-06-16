@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Match List</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+  <h1 class="text-2xl font-bold mb-6 text-blue-700">Match List</h1>
+
+  <div class="bg-white rounded shadow p-4 overflow-auto max-h-[600px]">
+    <table class="w-full text-sm border border-gray-300 rounded min-w-[600px]">
+      <thead class="bg-gray-100 sticky top-0 z-10">
+        <tr>
+          <th class="p-3 border border-gray-300 text-left">Title</th>
+          <th class="p-3 border border-gray-300 text-left">Date & Time</th>
+          <th class="p-3 border border-gray-300 text-right">Total Price (৳)</th>
+          <th class="p-3 border border-gray-300 text-right">Per Goal (৳)</th>
+          <th class="p-3 border border-gray-300 text-right">Entry Fee (৳)</th>
+        </tr>
+      </thead>
+      <tbody id="matchesTableBody">
+        <tr><td colspan="5" class="p-4 text-center text-gray-500">Loading matches...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
+      authDomain: "dlstournament-31ac1.firebaseapp.com",
+      projectId: "dlstournament-31ac1",
+      storageBucket: "dlstournament-31ac1.appspot.com",
+      messagingSenderId: "874377019055",
+      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
+      measurementId: "G-0DGFJEV6GL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const matchesTableBody = document.getElementById("matchesTableBody");
+
+    async function loadMatches() {
+      try {
+        const matchesCol = collection(db, "matches");
+        const matchesSnapshot = await getDocs(matchesCol);
+
+        if (matchesSnapshot.empty) {
+          matchesTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center">No matches found.</td></tr>`;
+          return;
+        }
+
+        let rowsHtml = "";
+        matchesSnapshot.forEach(docSnap => {
+          const match = docSnap.data();
+
+          // dateTime string formatting (optional)
+          let dt = match.dateTime;
+          let formattedDate = dt ? new Date(dt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "N/A";
+
+          rowsHtml += `
+            <tr class="hover:bg-gray-50 border-t">
+              <td class="p-3 border border-gray-300 max-w-xs break-words">${match.title || "N/A"}</td>
+              <td class="p-3 border border-gray-300">${formattedDate}</td>
+              <td class="p-3 border border-gray-300 text-right">${match.totalPrice?.toFixed(2) || "0.00"}</td>
+              <td class="p-3 border border-gray-300 text-right">${match.perGoal?.toFixed(2) || "0.00"}</td>
+              <td class="p-3 border border-gray-300 text-right">${match.entryFee?.toFixed(2) || "0.00"}</td>
+            </tr>
+          `;
+        });
+
+        matchesTableBody.innerHTML = rowsHtml;
+
+      } catch (error) {
+        matchesTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-600">Error loading matches: ${error.message}</td></tr>`;
+        console.error("Error loading matches:", error);
+      }
+    }
+
+    loadMatches();
+  </script>
+</body>
+</html>
