@@ -35,7 +35,7 @@
     </div>
     <div class="flex items-center gap-6 text-2xl text-gray-100">
       <i class="fa-solid fa-headset font-bold text-1xl"></i>
-      <div id="ProfileBtn" class="bg-gray-900 w-5 h-8 hover:border-purple-500 flex items-center justify-center rounded-sm border border-gray-700" onclick="toggleProfile()">
+      <div class="bg-gray-900 w-5 h-8 hover:border-purple-500 flex items-center justify-center rounded-sm border border-gray-700" onclick="toggleProfile()">
         <i class="fa-solid fa-ellipsis-vertical"></i>
       </div>
     </div>
@@ -57,7 +57,15 @@
         </button>
       </a>
     </div>
+
     <p id="userName"></p>
+
+    <!-- Logout Button -->
+    <div class="text-center">
+      <button onclick="logout()" class="bg-red-500 hover:bg-red-600 transition text-white px-6 py-2 rounded-full text-sm font-semibold shadow-md">
+        Logout
+      </button>
+    </div>
   </main>
 
   <!-- Firebase and JS -->
@@ -86,7 +94,6 @@
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
-
         document.getElementById("userName").innerText = data.username || "No username";
         document.getElementById("mainBalance").innerText = `৳${data.balance || 0}`;
       }
@@ -95,10 +102,6 @@
     window.logout = async function () {
       await signOut(auth);
       window.location.href = "login.html";
-    };
-
-    window.toggleProfile = function () {
-      document.getElementById("profileModal").classList.toggle("hidden");
     };
   </script>
 </body>
