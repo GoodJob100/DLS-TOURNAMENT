@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel - Manage Matches</title>
+  <title>Admin Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -19,11 +19,8 @@
       </button>
     </div>
     <nav class="flex flex-col space-y-4 text-sm">
-      <a href="#addMatchSection" class="flex items-center space-x-3 hover:bg-blue-700 p-2 rounded transition">
-        <i class="fas fa-clipboard-list"></i><span>Add Match</span>
-      </a>
-      <a href="#matchListSection" class="flex items-center space-x-3 hover:bg-blue-700 p-2 rounded transition">
-        <i class="fas fa-list"></i><span>Match List</span>
+      <a href="matchlist.html" class="flex items-center space-x-3 hover:bg-blue-700 p-2 rounded transition">
+        <i class="fas fa-clipboard-list"></i><span>Match List</span>
       </a>
       <button id="logoutBtn" class="flex items-center space-x-3 hover:bg-red-600 p-2 rounded mt-10 transition">
         <i class="fas fa-sign-out-alt"></i><span>Logout</span>
@@ -46,14 +43,13 @@
     </header>
 
     <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
-
       <!-- Total Users Section -->
       <div class="bg-white shadow rounded p-4">
         <div class="text-xl font-semibold text-blue-700 mb-2" id="totalUsersCount">Total Users: ...</div>
       </div>
 
       <!-- Add Match Section -->
-      <section id="addMatchSection" class="bg-white shadow rounded p-4">
+      <div class="bg-white shadow rounded p-4">
         <h2 class="text-lg font-semibold text-blue-700 mb-4">Add New Match</h2>
         <form id="addMatchForm" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -82,65 +78,27 @@
             Add Match
           </button>
         </form>
-      </section>
+      </div>
 
-      <!-- Match List Section -->
-      <section id="matchListSection" class="bg-white shadow rounded p-4">
-        <h2 class="text-lg font-semibold text-blue-700 mb-4">Match List</h2>
+      <!-- Users Table Section -->
+      <div class="bg-white shadow rounded p-4">
         <div class="overflow-x-auto max-h-[600px]">
-          <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[700px]">
+          <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[600px]">
             <thead class="bg-gray-100 sticky top-0 z-10">
               <tr>
-                <th class="p-3 border border-gray-300 text-left">Title</th>
-                <th class="p-3 border border-gray-300 text-left">Date & Time</th>
-                <th class="p-3 border border-gray-300 text-right">Total Price (৳)</th>
-                <th class="p-3 border border-gray-300 text-right">Per Goal (৳)</th>
-                <th class="p-3 border border-gray-300 text-right">Entry Fee (৳)</th>
+                <th class="p-3 border border-gray-300 text-left">Email</th>
+                <th class="p-3 border border-gray-300 text-left">Balance (৳)</th>
+                <th class="p-3 border border-gray-300 text-left">Role</th>
                 <th class="p-3 border border-gray-300 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody id="matchesTableBody">
-              <tr><td colspan="6" class="p-4 text-center text-gray-500">Loading matches...</td></tr>
+            <tbody id="usersTableBody">
+              <tr><td colspan="4" class="p-4 text-center text-gray-500">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
-      </section>
-
+      </div>
     </main>
-  </div>
-
-  <!-- Edit Match Modal -->
-  <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-    <div class="bg-white rounded shadow-lg max-w-lg w-full p-6">
-      <h3 class="text-xl font-semibold mb-4">Edit Match</h3>
-      <form id="editMatchForm" class="space-y-4">
-        <input type="hidden" id="editMatchId" />
-        <div>
-          <label class="block font-medium mb-1">Match Title</label>
-          <input type="text" id="editMatchTitle" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-        </div>
-        <div>
-          <label class="block font-medium mb-1">Date & Time</label>
-          <input type="datetime-local" id="editMatchDateTime" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-        </div>
-        <div>
-          <label class="block font-medium mb-1">Total Price (৳)</label>
-          <input type="number" id="editTotalPrice" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-        </div>
-        <div>
-          <label class="block font-medium mb-1">Per Goal (৳)</label>
-          <input type="number" id="editPerGoal" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-        </div>
-        <div>
-          <label class="block font-medium mb-1">Entry Fee (৳)</label>
-          <input type="number" id="editEntryFee" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-        </div>
-        <div class="flex justify-end space-x-3 mt-4">
-          <button type="button" id="closeEditModal" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
-        </div>
-      </form>
-    </div>
   </div>
 
   <!-- Firebase and Logic -->
@@ -158,8 +116,7 @@
       getDocs,
       addDoc,
       doc,
-      updateDoc,
-      deleteDoc
+      updateDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -182,52 +139,20 @@
     const totalUsersCountElem = document.getElementById("totalUsersCount");
     const addMatchForm = document.getElementById("addMatchForm");
 
-    // Match list elements
-    const matchesTableBody = document.getElementById("matchesTableBody");
-
-    // Edit modal elements
-    const editModal = document.getElementById("editModal");
-    const editMatchForm = document.getElementById("editMatchForm");
-    const closeEditModalBtn = document.getElementById("closeEditModal");
-
-    // Sidebar toggle elements
-    const sidebar = document.getElementById("sidebar");
-    const overlay = document.getElementById("overlay");
-    const openSidebarBtn = document.getElementById("openSidebar");
-    const closeSidebarBtn = document.getElementById("closeSidebar");
-
-    // Logout
     logoutBtn.addEventListener("click", async () => {
       await signOut(auth);
       window.location.href = "login.html";
     });
 
-    // Sidebar toggle handlers
-    openSidebarBtn.addEventListener("click", () => {
-      sidebar.classList.remove("-translate-x-full");
-      overlay.classList.remove("hidden");
-    });
-    closeSidebarBtn.addEventListener("click", () => {
-      sidebar.classList.add("-translate-x-full");
-      overlay.classList.add("hidden");
-    });
-    overlay.addEventListener("click", () => {
-      sidebar.classList.add("-translate-x-full");
-      overlay.classList.add("hidden");
-    });
-
-    // Authentication and initial data load
     onAuthStateChanged(auth, user => {
       if (!user) {
         window.location.href = "login.html";
       } else {
         loadTotalUsersCount();
         loadUsers();
-        loadMatches();
       }
     });
 
-    // Load total users count
     async function loadTotalUsersCount() {
       try {
         const usersCol = collection(db, "users");
@@ -239,7 +164,6 @@
       }
     }
 
-    // Load users table
     async function loadUsers() {
       try {
         const usersCol = collection(db, "users");
@@ -294,7 +218,7 @@
               role: newRole
             });
 
-            alert("User updated successfully.");
+            alert("Updated successfully.");
           });
         });
 
@@ -308,7 +232,7 @@
     addMatchForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const title = document.getElementById("matchTitle").value.trim();
+      const title = document.getElementById("matchTitle").value;
       const dateTime = document.getElementById("matchDateTime").value;
       const totalPrice = parseFloat(document.getElementById("totalPrice").value);
       const perGoal = parseFloat(document.getElementById("perGoal").value);
@@ -329,145 +253,31 @@
         });
         alert("✅ Match added successfully!");
         addMatchForm.reset();
-        loadMatches();
       } catch (error) {
         console.error("Error adding match:", error);
         alert("❌ Failed to add match.");
       }
     });
 
-    // Load matches and display in table
-    async function loadMatches() {
-      try {
-        const matchesCol = collection(db, "matches");
-        const matchesSnapshot = await getDocs(matchesCol);
+    // Sidebar toggle
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("overlay");
+    const openSidebarBtn = document.getElementById("openSidebar");
+    const closeSidebarBtn = document.getElementById("closeSidebar");
 
-        if (matchesSnapshot.empty) {
-          matchesTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center">No matches found.</td></tr>`;
-          return;
-        }
-
-        let rowsHtml = "";
-        matchesSnapshot.forEach((docSnap) => {
-          const match = docSnap.data();
-          const dateTimeFormatted = new Date(match.dateTime).toLocaleString();
-          rowsHtml += `
-            <tr class="hover:bg-gray-50 border-t" data-id="${docSnap.id}">
-              <td class="p-3 border border-gray-300 break-words max-w-xs">${match.title}</td>
-              <td class="p-3 border border-gray-300">${dateTimeFormatted}</td>
-              <td class="p-3 border border-gray-300 text-right">${match.totalPrice.toFixed(2)}</td>
-              <td class="p-3 border border-gray-300 text-right">${match.perGoal.toFixed(2)}</td>
-              <td class="p-3 border border-gray-300 text-right">${match.entryFee.toFixed(2)}</td>
-              <td class="p-3 border border-gray-300 text-center space-x-2">
-                <button class="edit-match-btn text-blue-600 hover:text-blue-800" title="Edit">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="delete-match-btn text-red-600 hover:text-red-800" title="Delete">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          `;
-        });
-
-        matchesTableBody.innerHTML = rowsHtml;
-
-        // Add event listeners for edit and delete
-        document.querySelectorAll(".edit-match-btn").forEach(btn => {
-          btn.addEventListener("click", (e) => {
-            const tr = e.target.closest("tr") || e.target.parentElement.closest("tr");
-            openEditModal(tr.getAttribute("data-id"));
-          });
-        });
-
-        document.querySelectorAll(".delete-match-btn").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
-            const tr = e.target.closest("tr") || e.target.parentElement.closest("tr");
-            const matchId = tr.getAttribute("data-id");
-            if (confirm("Are you sure you want to delete this match?")) {
-              try {
-                await deleteDoc(doc(db, "matches", matchId));
-                alert("Match deleted successfully.");
-                loadMatches();
-              } catch (error) {
-                alert("Failed to delete match.");
-                console.error("Delete error:", error);
-              }
-            }
-          });
-        });
-
-      } catch (error) {
-        matchesTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600">Error loading matches: ${error.message}</td></tr>`;
-        console.error("Error loading matches:", error);
-      }
-    }
-
-    // Open Edit Modal with match data loaded
-    async function openEditModal(matchId) {
-      try {
-        const matchDoc = await doc(db, "matches", matchId).get();
-        const matchSnap = await getDocs(doc(db, "matches", matchId));
-        // The above line won't work. Instead:
-        // Use getDoc instead of getDocs
-        import { getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        const matchDocSnap = await getDoc(doc(db, "matches", matchId));
-        if (!matchDocSnap.exists()) {
-          alert("Match not found.");
-          return;
-        }
-        const match = matchDocSnap.data();
-
-        document.getElementById("editMatchId").value = matchId;
-        document.getElementById("editMatchTitle").value = match.title;
-        document.getElementById("editMatchDateTime").value = match.dateTime;
-        document.getElementById("editTotalPrice").value = match.totalPrice;
-        document.getElementById("editPerGoal").value = match.perGoal;
-        document.getElementById("editEntryFee").value = match.entryFee;
-
-        editModal.classList.remove("hidden");
-      } catch (error) {
-        alert("Failed to load match data.");
-        console.error("Load edit match error:", error);
-      }
-    }
-
-    // Close Edit Modal
-    closeEditModalBtn.addEventListener("click", () => {
-      editModal.classList.add("hidden");
+    openSidebarBtn.addEventListener("click", () => {
+      sidebar.classList.remove("-translate-x-full");
+      overlay.classList.remove("hidden");
     });
 
-    // Save edited match
-    editMatchForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    closeSidebarBtn.addEventListener("click", () => {
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
+    });
 
-      const matchId = document.getElementById("editMatchId").value;
-      const title = document.getElementById("editMatchTitle").value.trim();
-      const dateTime = document.getElementById("editMatchDateTime").value;
-      const totalPrice = parseFloat(document.getElementById("editTotalPrice").value);
-      const perGoal = parseFloat(document.getElementById("editPerGoal").value);
-      const entryFee = parseFloat(document.getElementById("editEntryFee").value);
-
-      if (!title || !dateTime || isNaN(totalPrice) || isNaN(perGoal) || isNaN(entryFee)) {
-        alert("Please fill out all fields correctly.");
-        return;
-      }
-
-      try {
-        await updateDoc(doc(db, "matches", matchId), {
-          title,
-          dateTime,
-          totalPrice,
-          perGoal,
-          entryFee
-        });
-        alert("Match updated successfully.");
-        editModal.classList.add("hidden");
-        loadMatches();
-      } catch (error) {
-        alert("Failed to update match.");
-        console.error("Update match error:", error);
-      }
+    overlay.addEventListener("click", () => {
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
     });
   </script>
 </body>
