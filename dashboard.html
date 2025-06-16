@@ -89,6 +89,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     let currentUser = null;
+    let userBalance = 0;
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) return window.location.href = "login.html";
@@ -97,8 +98,9 @@
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
+        userBalance = data.balance || 0;
         document.getElementById("userName").innerText = data.username || "No username";
-        document.getElementById("mainBalance").innerText = `৳${data.balance || 0}`;
+        document.getElementById("mainBalance").innerText = `৳${userBalance.toFixed(2)}`;
       }
 
       fetchMatches();
@@ -136,7 +138,7 @@
               ${
                 isFull
                   ? `<button disabled class="mt-2 w-full bg-gray-700 text-white font-semibold py-1.5 rounded cursor-not-allowed">Match Full</button>`
-                  : `<button onclick="joinMatch('${matchId}', ${slot}, ${slotLimit})" class="mt-2 w-full bg-yellow-400 text-black font-semibold py-1.5 rounded hover:bg-yellow-300 transition">Join</button>`
+                  : `<button onclick="joinMatch('${matchId}', ${slot}, ${slotLimit}, ${match.entryFee || 0})" class="mt-2 w-full bg-yellow-400 text-black font-semibold py-1.5 rounded hover:bg-yellow-300 transition">Join</button>`
               }
             </div>
           `;
@@ -150,7 +152,7 @@
       }
     }
 
-    window.joinMatch = async (matchId, currentSlot, slotLimit) => {
+    window.joinMatch = async (matchId, currentSlot, slotLimit, entryFee) => {
       if (!currentUser) return;
 
       const userId = currentUser.uid;
@@ -167,15 +169,31 @@
         return;
       }
 
+      if (userBalance < entryFee) {
+        Swal.fire("Insufficient Balance", "You don't have enough balance to join this match.", "error");
+        return;
+      }
+
       try {
+        // Deduct entryFee
+        await updateDoc(doc(db, "users", userId), {
+          balance: userBalance - entryFee
+        });
+
+        // Add participant
         await setDoc(participantRef, {
           joinedAt: new Date(),
           uid: userId
         });
 
+        // Increment slot count
         await updateDoc(doc(db, "matches", matchId), {
           slot: increment(1)
         });
+
+        // Update local balance and UI
+        userBalance -= entryFee;
+        document.getElementById("mainBalance").innerText = `৳${userBalance.toFixed(2)}`;
 
         Swal.fire("Joined!", "You have successfully joined the match.", "success");
         fetchMatches();
