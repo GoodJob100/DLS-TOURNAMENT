@@ -144,6 +144,17 @@
     }
 
     window.showTeamInput = async (matchId, currentSlot, slotLimit, entryFee) => {
+      if (!currentUser) return;
+
+      const userId = currentUser.uid;
+      const participantRef = doc(db, "matches", matchId, "participants", userId);
+      const participantSnap = await getDoc(participantRef);
+
+      if (participantSnap.exists()) {
+        Swal.fire("Already Joined", "You have already joined this match.", "info");
+        return;
+      }
+
       const { value: teamName } = await Swal.fire({
         title: "Enter Team Name",
         input: "text",
