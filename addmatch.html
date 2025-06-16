@@ -5,33 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Add Match</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
-  <div class="bg-white p-8 rounded shadow-md w-full max-w-lg">
-    <h2 class="text-2xl font-bold mb-6 text-center text-blue-700">Add Match</h2>
-    
-    <form id="addMatchForm" class="space-y-4">
-      <input type="text" id="matchTitle" placeholder="Match Title" required class="w-full p-3 border rounded" />
-      
-      <input type="datetime-local" id="matchDateTime" required class="w-full p-3 border rounded" />
-      
-      <input type="number" id="totalPrize" placeholder="Total Prize (৳)" min="0" required class="w-full p-3 border rounded" />
-      
-      <input type="number" id="perGoal" placeholder="Per Goal (৳)" min="0" required class="w-full p-3 border rounded" />
-      
-      <input type="number" id="entryFee" placeholder="Entry Fee (৳)" min="0" required class="w-full p-3 border rounded" />
-      
-      <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition">Add Match</button>
+  <div class="bg-white rounded shadow-md p-6 w-full max-w-lg">
+    <h2 class="text-2xl font-bold mb-6 text-blue-700 text-center">Add New Match</h2>
+
+    <form id="matchForm" class="space-y-4">
+      <div>
+        <label class="block font-medium mb-1">Match Title</label>
+        <input type="text" id="matchTitle" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+      </div>
+
+      <div>
+        <label class="block font-medium mb-1">Date & Time</label>
+        <input type="datetime-local" id="matchTime" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+      </div>
+
+      <div>
+        <label class="block font-medium mb-1">Total Price (৳)</label>
+        <input type="number" id="totalPrice" min="0" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+      </div>
+
+      <div>
+        <label class="block font-medium mb-1">Per Goal (৳)</label>
+        <input type="number" id="perGoal" min="0" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+      </div>
+
+      <div>
+        <label class="block font-medium mb-1">Entry Fee (৳)</label>
+        <input type="number" id="entryFee" min="0" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+      </div>
+
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Add Match</button>
     </form>
 
     <p id="message" class="text-center mt-4 text-sm"></p>
   </div>
 
-  <!-- Firebase Script -->
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
@@ -46,44 +67,39 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const form = document.getElementById("addMatchForm");
-    const message = document.getElementById("message");
+    const matchForm = document.getElementById("matchForm");
+    const messageEl = document.getElementById("message");
 
-    form.addEventListener("submit", async (e) => {
+    matchForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      messageEl.textContent = "Adding match...";
 
-      const title = document.getElementById("matchTitle").value.trim();
-      const dateTime = document.getElementById("matchDateTime").value;
-      const totalPrize = parseFloat(document.getElementById("totalPrize").value);
+      const title = document.getElementById("matchTitle").value;
+      const time = document.getElementById("matchTime").value;
+      const totalPrice = parseFloat(document.getElementById("totalPrice").value);
       const perGoal = parseFloat(document.getElementById("perGoal").value);
       const entryFee = parseFloat(document.getElementById("entryFee").value);
-
-      // Input validation
-      if (!title || !dateTime || isNaN(totalPrize) || isNaN(perGoal) || isNaN(entryFee)) {
-        message.textContent = "❌ Please fill in all fields correctly.";
-        message.className = "text-red-600 text-center mt-4";
-        return;
-      }
 
       try {
         await addDoc(collection(db, "matches"), {
           title,
-          dateTime,
-          totalPrize,
+          time: new Date(time),
+          totalPrice,
           perGoal,
           entryFee,
-          createdAt: new Date().toISOString()
+          createdAt: Timestamp.now(),
         });
 
-        message.textContent = "✅ Match added successfully!";
-        message.className = "text-green-600 text-center mt-4";
-        form.reset();
+        messageEl.textContent = "✅ Match added successfully!";
+        messageEl.className = "text-green-600 text-center mt-4";
+        matchForm.reset();
       } catch (error) {
         console.error("Error adding match:", error);
-        message.textContent = "❌ Failed to add match. Check console.";
-        message.className = "text-red-600 text-center mt-4";
+        messageEl.textContent = "❌ Failed to add match.";
+        messageEl.className = "text-red-600 text-center mt-4";
       }
     });
   </script>
+
 </body>
 </html>
