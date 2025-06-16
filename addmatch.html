@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add Match</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white p-8 rounded shadow-md w-full max-w-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center text-blue-700">Add Match</h2>
+    <form id="addMatchForm" class="space-y-4">
+      <input type="text" id="matchTitle" placeholder="Match Title" required class="w-full p-3 border rounded" />
+      
+      <input type="datetime-local" id="matchDateTime" required class="w-full p-3 border rounded" />
+      
+      <input type="number" id="totalPrize" placeholder="Total Prize (৳)" required class="w-full p-3 border rounded" />
+      
+      <input type="number" id="perGoal" placeholder="Per Goal (৳)" required class="w-full p-3 border rounded" />
+      
+      <input type="number" id="entryFee" placeholder="Entry Fee (৳)" required class="w-full p-3 border rounded" />
+      
+      <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition">Add Match</button>
+    </form>
+    <p id="message" class="text-center mt-4 text-sm"></p>
+  </div>
+
+  <!-- Firebase Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
+      authDomain: "dlstournament-31ac1.firebaseapp.com",
+      projectId: "dlstournament-31ac1",
+      storageBucket: "dlstournament-31ac1.appspot.com",
+      messagingSenderId: "874377019055",
+      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
+      measurementId: "G-0DGFJEV6GL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("addMatchForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("matchTitle").value;
+      const dateTime = document.getElementById("matchDateTime").value;
+      const totalPrize = parseFloat(document.getElementById("totalPrize").value);
+      const perGoal = parseFloat(document.getElementById("perGoal").value);
+      const entryFee = parseFloat(document.getElementById("entryFee").value);
+
+      try {
+        await addDoc(collection(db, "matches"), {
+          title,
+          dateTime,
+          totalPrize,
+          perGoal,
+          entryFee,
+          createdAt: new Date().toISOString()
+        });
+
+        message.textContent = "✅ Match added successfully!";
+        message.classList.add("text-green-600");
+        form.reset();
+      } catch (error) {
+        console.error("Error adding match:", error);
+        message.textContent = "❌ Failed to add match.";
+        message.classList.add("text-red-600");
+      }
+    });
+  </script>
+</body>
+</html>
