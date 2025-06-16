@@ -24,10 +24,11 @@
       where,
       getDocs,
       doc,
-      updateDoc
+      updateDoc,
+      getDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Your Firebase config here
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
       authDomain: "dlstournament-31ac1.firebaseapp.com",
@@ -58,26 +59,53 @@
 
         let html = "";
 
-        querySnapshot.forEach(docSnap => {
+        // Helper to fetch user emails by uid
+        async function getUserEmails(uids) {
+          const emails = [];
+          for (const uid of uids) {
+            try {
+              const userDoc = await getDoc(doc(db, "users", uid));
+              if (userDoc.exists()) {
+                emails.push(userDoc.data().email || uid);
+              } else {
+                emails.push(uid);
+              }
+            } catch {
+              emails.push(uid);
+            }
+          }
+          return emails;
+        }
+
+        for (const docSnap of querySnapshot.docs) {
           const match = docSnap.data();
           const matchId = docSnap.id;
-          const dateTime = new Date(match.datetime.seconds * 1000).toLocaleString();
+          const dateTime = match.datetime?.toDate ? match.datetime.toDate() : new Date();
+          const formattedDateTime = dateTime.toLocaleString();
+
+          // players is array of user ids
+          const players = match.players || [];
+          const playerEmails = await getUserEmails(players);
 
           html += `
             <div class="bg-white rounded shadow p-5 flex flex-col justify-between">
               <div>
                 <h3 class="text-xl font-semibold mb-3 text-blue-700">Match ID: ${matchId}</h3>
-                <p><strong>Date & Time:</strong> ${dateTime}</p>
+                <p><strong>Date & Time:</strong> ${formattedDateTime}</p>
                 <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
                 <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
                 <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
+                <p><strong>Players Joined:</strong></p>
+                <ul class="list-disc list-inside text-sm text-gray-700 max-h-24 overflow-auto mb-2">
+                  ${playerEmails.map(email => `<li>${email}</li>`).join("")}
+                </ul>
               </div>
-              <button data-id="${matchId}" class="winBtn mt-6 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold transition">
+              <button data-id="${matchId}" class="winBtn mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold transition">
                 Mark as Win
               </button>
             </div>
           `;
-        });
+        }
 
         pendingMatchesContainer.innerHTML = html;
 
