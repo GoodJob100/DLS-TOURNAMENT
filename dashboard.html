@@ -123,6 +123,7 @@
           const formattedDate = matchDate.toLocaleString().replace(/GMT.*/, "").trim();
           const slot = match.slot || 0;
           const slotLimit = match.slotLimit || 0;
+          const isFull = slot >= slotLimit;
 
           html += `
             <div class="bg-gray-900 p-4 rounded-md border border-gray-700 space-y-1">
@@ -132,7 +133,11 @@
               <p class="text-gray-300 text-sm">Per Goal: ৳${match.perGoal || 'N/A'}</p>
               <p class="text-gray-300 text-sm">Entry Fee: ৳${match.entryFee || 'N/A'}</p>
               <p class="text-purple-400 text-sm font-semibold">Slot: ${slot} / ${slotLimit}</p>
-              <button onclick="joinMatch('${matchId}', ${slot}, ${slotLimit})" class="mt-2 w-full bg-yellow-400 text-black font-semibold py-1.5 rounded hover:bg-yellow-300 transition">Join</button>
+              ${
+                isFull
+                  ? `<button disabled class="mt-2 w-full bg-gray-700 text-white font-semibold py-1.5 rounded cursor-not-allowed">Match Full</button>`
+                  : `<button onclick="joinMatch('${matchId}', ${slot}, ${slotLimit})" class="mt-2 w-full bg-yellow-400 text-black font-semibold py-1.5 rounded hover:bg-yellow-300 transition">Join</button>`
+              }
             </div>
           `;
         });
