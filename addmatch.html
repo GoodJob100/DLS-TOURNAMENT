@@ -7,21 +7,24 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
   <div class="bg-white p-8 rounded shadow-md w-full max-w-lg">
     <h2 class="text-2xl font-bold mb-6 text-center text-blue-700">Add Match</h2>
+    
     <form id="addMatchForm" class="space-y-4">
       <input type="text" id="matchTitle" placeholder="Match Title" required class="w-full p-3 border rounded" />
       
       <input type="datetime-local" id="matchDateTime" required class="w-full p-3 border rounded" />
       
-      <input type="number" id="totalPrize" placeholder="Total Prize (৳)" required class="w-full p-3 border rounded" />
+      <input type="number" id="totalPrize" placeholder="Total Prize (৳)" min="0" required class="w-full p-3 border rounded" />
       
-      <input type="number" id="perGoal" placeholder="Per Goal (৳)" required class="w-full p-3 border rounded" />
+      <input type="number" id="perGoal" placeholder="Per Goal (৳)" min="0" required class="w-full p-3 border rounded" />
       
-      <input type="number" id="entryFee" placeholder="Entry Fee (৳)" required class="w-full p-3 border rounded" />
+      <input type="number" id="entryFee" placeholder="Entry Fee (৳)" min="0" required class="w-full p-3 border rounded" />
       
       <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition">Add Match</button>
     </form>
+
     <p id="message" class="text-center mt-4 text-sm"></p>
   </div>
 
@@ -49,11 +52,18 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const title = document.getElementById("matchTitle").value;
+      const title = document.getElementById("matchTitle").value.trim();
       const dateTime = document.getElementById("matchDateTime").value;
       const totalPrize = parseFloat(document.getElementById("totalPrize").value);
       const perGoal = parseFloat(document.getElementById("perGoal").value);
       const entryFee = parseFloat(document.getElementById("entryFee").value);
+
+      // Input validation
+      if (!title || !dateTime || isNaN(totalPrize) || isNaN(perGoal) || isNaN(entryFee)) {
+        message.textContent = "❌ Please fill in all fields correctly.";
+        message.className = "text-red-600 text-center mt-4";
+        return;
+      }
 
       try {
         await addDoc(collection(db, "matches"), {
@@ -66,12 +76,12 @@
         });
 
         message.textContent = "✅ Match added successfully!";
-        message.classList.add("text-green-600");
+        message.className = "text-green-600 text-center mt-4";
         form.reset();
       } catch (error) {
         console.error("Error adding match:", error);
-        message.textContent = "❌ Failed to add match.";
-        message.classList.add("text-red-600");
+        message.textContent = "❌ Failed to add match. Check console.";
+        message.className = "text-red-600 text-center mt-4";
       }
     });
   </script>
