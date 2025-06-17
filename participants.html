@@ -26,7 +26,6 @@
     </div>
   </main>
 
-  <!-- Firebase and JS Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -140,7 +139,6 @@
           participantsContainer.appendChild(card);
         }
 
-        // Add event listeners for all "Declare Winner" buttons
         const winButtons = document.querySelectorAll(".win-button");
         winButtons.forEach(button => {
           button.addEventListener("click", async (e) => {
@@ -152,24 +150,17 @@
             const winnerUid = btn.dataset.uid;
 
             try {
-              // Get match data from matchMap for totalPrice
               const matchData = matchMap[matchId];
               if (!matchData) throw new Error("Match data not found");
 
               const totalPrice = matchData.match.totalPrice || 0;
-
               if (totalPrice <= 0) throw new Error("Invalid totalPrice");
 
-              // Reference to the winning user's document
-              // Assume users collection: /users/{uid}
               const userDocRef = doc(db, "users", winnerUid);
-
-              // Update user's mainBalance by incrementing totalPrice
               await updateDoc(userDocRef, {
                 mainBalance: increment(totalPrice)
               });
 
-              // Update status message
               const statusDiv = document.getElementById(`status-${matchId}`);
               statusDiv.textContent = `Successfully added ৳${totalPrice} to user ${winnerUid} (winner).`;
               statusDiv.classList.remove("text-red-500");
@@ -178,7 +169,6 @@
               btn.textContent = "Winner Declared ✔️";
               btn.disabled = true;
 
-              // Disable the other team's button for this match
               winButtons.forEach(otherBtn => {
                 if (otherBtn.dataset.matchid === matchId && otherBtn !== btn) {
                   otherBtn.disabled = true;
