@@ -30,7 +30,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collectionGroup, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collectionGroup, getDocs, getDoc, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
@@ -83,6 +83,7 @@
             if (matchSnap.exists()) {
               matchMap[matchId] = {
                 match: matchSnap.data(),
+                matchRef: matchRef,
                 teams: []
               };
             }
@@ -95,7 +96,7 @@
         }
 
         for (const [matchId, data] of Object.entries(matchMap)) {
-          const { match, teams } = data;
+          const { match, teams, matchRef } = data;
 
           const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
           const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
@@ -119,17 +120,86 @@
               <div class="flex-1 text-center">
                 <div>${team1.teamName}</div>
                 <div class="text-xs text-gray-400 break-all">${team1.uid}</div>
+                <button data-matchid="${matchId}" data-uid="${team1.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
+                  Declare ${team1.teamName} Winner
+                </button>
               </div>
               <span class="text-gray-500">VS</span>
               <div class="flex-1 text-center">
                 <div>${team2.teamName}</div>
                 <div class="text-xs text-gray-400 break-all">${team2.uid}</div>
+                <button data-matchid="${matchId}" data-uid="${team2.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
+                  Declare ${team2.teamName} Winner
+                </button>
               </div>
             </div>
+
+            <div class="text-center text-sm text-gray-500" id="status-${matchId}"></div>
           `;
 
           participantsContainer.appendChild(card);
         }
+
+        // Add event listeners for all "Declare Winner" buttons
+        const winButtons = document.querySelectorAll(".win-button");
+        winButtons.forEach(button => {
+          button.addEventListener("click", async (e) => {
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            btn.textContent = "Processing...";
+
+            const matchId = btn.dataset.matchid;
+            const winnerUid = btn.dataset.uid;
+
+            try {
+              // Get match data from matchMap for totalPrice
+              const matchData = matchMap[matchId];
+              if (!matchData) throw new Error("Match data not found");
+
+              const totalPrice = matchData.match.totalPrice || 0;
+
+              if (totalPrice <= 0) throw new Error("Invalid totalPrice");
+
+              // Reference to the winning user's document
+              // Assume users collection: /users/{uid}
+              const userDocRef = doc(db, "users", winnerUid);
+
+              // Update user's mainBalance by incrementing totalPrice
+              await updateDoc(userDocRef, {
+                mainBalance: increment(totalPrice)
+              });
+
+              // Update status message
+              const statusDiv = document.getElementById(`status-${matchId}`);
+              statusDiv.textContent = `Successfully added ৳${totalPrice} to user ${winnerUid} (winner).`;
+              statusDiv.classList.remove("text-red-500");
+              statusDiv.classList.add("text-green-600");
+
+              btn.textContent = "Winner Declared ✔️";
+              btn.disabled = true;
+
+              // Disable the other team's button for this match
+              winButtons.forEach(otherBtn => {
+                if (otherBtn.dataset.matchid === matchId && otherBtn !== btn) {
+                  otherBtn.disabled = true;
+                  otherBtn.textContent = "Not Winner";
+                  otherBtn.classList.remove("bg-green-500");
+                  otherBtn.classList.add("bg-gray-400");
+                }
+              });
+
+            } catch (error) {
+              const statusDiv = document.getElementById(`status-${matchId}`);
+              statusDiv.textContent = `Error: ${error.message}`;
+              statusDiv.classList.remove("text-green-600");
+              statusDiv.classList.add("text-red-500");
+
+              btn.textContent = "Declare Winner";
+              btn.disabled = false;
+              console.error("Error declaring winner:", error);
+            }
+          });
+        });
 
       } catch (error) {
         loadingMessage.textContent = `Error: ${error.message}`;
