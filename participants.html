@@ -20,7 +20,7 @@
   <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
     <div class="bg-white shadow rounded p-4 mt-6">
       <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
-      <div id="participantsContainer" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div id="participantsContainer" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2">
         <div class="col-span-full text-center text-gray-500" id="loadingMessage">Loading participants...</div>
       </div>
     </div>
@@ -60,7 +60,6 @@
     async function loadParticipants() {
       try {
         const querySnapshot = await getDocs(collectionGroup(db, "participants"));
-
         if (querySnapshot.empty) {
           loadingMessage.textContent = "No participants found.";
           return;
@@ -68,32 +67,58 @@
 
         loadingMessage.remove();
 
+        const matchMap = {};
+
         for (const docSnap of querySnapshot.docs) {
           const participant = docSnap.data();
           const uid = docSnap.id;
 
           const matchRef = docSnap.ref.parent.parent;
-          let match = {};
-          if (matchRef) {
+          let matchId = matchRef?.id;
+
+          if (!matchId) continue;
+
+          if (!matchMap[matchId]) {
             const matchSnap = await getDoc(matchRef);
             if (matchSnap.exists()) {
-              match = matchSnap.data();
+              matchMap[matchId] = {
+                match: matchSnap.data(),
+                teams: []
+              };
             }
           }
 
+          matchMap[matchId].teams.push(participant.teamName || "N/A");
+        }
+
+        for (const [matchId, data] of Object.entries(matchMap)) {
+          const { match, teams } = data;
+
+          const team1 = teams[0] || "Team A";
+          const team2 = teams[1] || "Team B";
+
           const card = document.createElement("div");
-          card.className = "bg-white rounded-2xl shadow p-4 border border-gray-200";
+          card.className = "bg-white rounded-2xl shadow p-5 border border-gray-200";
+
           card.innerHTML = `
-            <h3 class="text-lg font-semibold text-blue-700 mb-2">${match.title || "Unknown Match"}</h3>
-            <p><strong class="text-gray-600">Team:</strong> ${participant.teamName || "N/A"}</p>
-            <p><strong class="text-gray-600">UID:</strong> ${uid}</p>
-            <p><strong class="text-gray-600">Date & Time:</strong> ${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
-            <div class="mt-2 text-sm text-gray-700 space-y-1">
+            <div class="text-center mb-4">
+              <h3 class="text-xl font-bold text-blue-700">${match.title || "Unknown Match"}</h3>
+              <p class="text-gray-600 text-sm">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
+            </div>
+
+            <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-4">
+              <span class="text-center flex-1">${team1}</span>
+              <span class="text-gray-500">VS</span>
+              <span class="text-center flex-1">${team2}</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
               <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
               <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
               <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
             </div>
           `;
+
           participantsContainer.appendChild(card);
         }
 
