@@ -26,6 +26,7 @@
     </div>
   </main>
 
+  <!-- Firebase and JS Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -71,8 +72,10 @@
         for (const docSnap of querySnapshot.docs) {
           const participant = docSnap.data();
           const uid = docSnap.id;
+
           const matchRef = docSnap.ref.parent.parent;
           let matchId = matchRef?.id;
+
           if (!matchId) continue;
 
           if (!matchMap[matchId]) {
@@ -81,8 +84,7 @@
               matchMap[matchId] = {
                 match: matchSnap.data(),
                 matchRef: matchRef,
-                teams: [],
-                winnerUid: matchSnap.data().winnerUid || null
+                teams: []
               };
             }
           }
@@ -94,7 +96,8 @@
         }
 
         for (const [matchId, data] of Object.entries(matchMap)) {
-          const { match, teams, winnerUid } = data;
+          const { match, teams, matchRef } = data;
+
           const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
           const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
 
@@ -131,14 +134,13 @@
               </div>
             </div>
 
-            <div class="text-center text-sm text-gray-500" id="status-${matchId}">
-              ${winnerUid ? `Winner already declared: ${winnerUid}` : ""}
-            </div>
+            <div class="text-center text-sm text-gray-500" id="status-${matchId}"></div>
           `;
 
           participantsContainer.appendChild(card);
         }
 
+        // Add event listeners for all "Declare Winner" buttons
         const winButtons = document.querySelectorAll(".win-button");
         winButtons.forEach(button => {
           button.addEventListener("click", async (e) => {
@@ -147,54 +149,44 @@
             btn.textContent = "Processing...";
 
             const matchId = btn.dataset.matchid;
-            const newWinnerUid = btn.dataset.uid;
+            const winnerUid = btn.dataset.uid;
 
             try {
+              // Get match data from matchMap for totalPrice
               const matchData = matchMap[matchId];
+              if (!matchData) throw new Error("Match data not found");
+
               const totalPrice = matchData.match.totalPrice || 0;
-              const matchRef = matchData.matchRef;
-              const prevWinnerUid = matchData.winnerUid;
 
-              if (!totalPrice || totalPrice <= 0) throw new Error("Invalid totalPrice");
+              if (totalPrice <= 0) throw new Error("Invalid totalPrice");
 
-              // Revert balance from previous winner if exists
-              if (prevWinnerUid && prevWinnerUid !== newWinnerUid) {
-                await updateDoc(doc(db, "users", prevWinnerUid), {
-                  mainBalance: increment(-totalPrice)
-                });
-              }
+              // Reference to the winning user's document
+              // Assume users collection: /users/{uid}
+              const userDocRef = doc(db, "users", winnerUid);
 
-              // Add reward to new winner
-              await updateDoc(doc(db, "users", newWinnerUid), {
+              // Update user's mainBalance by incrementing totalPrice
+              await updateDoc(userDocRef, {
                 mainBalance: increment(totalPrice)
               });
 
-              // Update winnerUid in match document
-              await updateDoc(matchRef, {
-                winnerUid: newWinnerUid
-              });
-
+              // Update status message
               const statusDiv = document.getElementById(`status-${matchId}`);
-              statusDiv.textContent = `Winner updated: ৳${totalPrice} added to ${newWinnerUid}`;
+              statusDiv.textContent = `Successfully added ৳${totalPrice} to user ${winnerUid} (winner).`;
               statusDiv.classList.remove("text-red-500");
               statusDiv.classList.add("text-green-600");
 
-              // Refresh buttons
+              btn.textContent = "Winner Declared ✔️";
+              btn.disabled = true;
+
+              // Disable the other team's button for this match
               winButtons.forEach(otherBtn => {
-                if (otherBtn.dataset.matchid === matchId) {
-                  if (otherBtn.dataset.uid === newWinnerUid) {
-                    otherBtn.textContent = "Winner Declared ✔️";
-                    otherBtn.disabled = true;
-                  } else {
-                    otherBtn.textContent = "Declare Winner";
-                    otherBtn.disabled = false;
-                    otherBtn.classList.remove("bg-gray-400");
-                    otherBtn.classList.add("bg-green-500");
-                  }
+                if (otherBtn.dataset.matchid === matchId && otherBtn !== btn) {
+                  otherBtn.disabled = true;
+                  otherBtn.textContent = "Not Winner";
+                  otherBtn.classList.remove("bg-green-500");
+                  otherBtn.classList.add("bg-gray-400");
                 }
               });
-
-              matchMap[matchId].winnerUid = newWinnerUid;
 
             } catch (error) {
               const statusDiv = document.getElementById(`status-${matchId}`);
@@ -204,15 +196,14 @@
 
               btn.textContent = "Declare Winner";
               btn.disabled = false;
-
-              console.error("Winner change error:", error);
+              console.error("Error declaring winner:", error);
             }
           });
         });
 
       } catch (error) {
         loadingMessage.textContent = `Error: ${error.message}`;
-        console.error("Load error:", error);
+        console.error("Error loading participants:", error);
       }
     }
   </script>
