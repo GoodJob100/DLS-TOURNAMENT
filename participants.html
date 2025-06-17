@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel</title>
+  <title>Admin Panel - Participants</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
@@ -17,84 +17,100 @@
     </a>
   </header>
 
-    <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
-      <!-- Participants Section -->
-      <div class="bg-white shadow rounded p-4 mt-6">
-        <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
-        <div class="overflow-x-auto max-h-[400px]">
-          <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[400px]">
-            <thead class="bg-gray-100 sticky top-0 z-10">
-              <tr>
-                <th class="p-3 border border-gray-300 text-left">Team Name</th>
-                <th class="p-3 border border-gray-300 text-left">UID</th>
-              </tr>
-            </thead>
-            <tbody id="participantsTableBody">
-              <tr><td colspan="2" class="p-4 text-center text-gray-500">Loading participants...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
-  </div>
-
-   <!-- Firebase and JS Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
-      authDomain: "dlstournament-31ac1.firebaseapp.com",
-      projectId: "dlstournament-31ac1",
-      storageBucket: "dlstournament-31ac1.appspot.com",
-      messagingSenderId: "874377019055",
-      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
-      measurementId: "G-0DGFJEV6GL"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const participantsTableBody = document.getElementById("participantsTableBody");
-
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = "login.html";
-      } else {
-        loadParticipants();
-      }
-    });
-
-    async function loadParticipants() {
-      try {
-        const snapshot = await getDocs(collectionGroup(db, "participants"));
-
-        if (snapshot.empty) {
-          participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-500">No participants found.</td></tr>`;
-          return;
-        }
-
-        let rowsHtml = "";
-        snapshot.forEach(docSnap => {
-          const participant = docSnap.data();
-          rowsHtml += `
-            <tr class="hover:bg-gray-50 border-t">
-              <td class="p-3 border border-gray-300 break-words">${participant.teamName || "N/A"}</td>
-              <td class="p-3 border border-gray-300 break-words">${docSnap.id}</td>
+  <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
+    <!-- Participants Section -->
+    <div class="bg-white shadow rounded p-4 mt-6">
+      <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
+      <div class="overflow-x-auto max-h-[600px]">
+        <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[900px]">
+          <thead class="bg-gray-100 sticky top-0 z-10">
+            <tr>
+              <th class="p-3 border border-gray-300 text-left">Team Name</th>
+              <th class="p-3 border border-gray-300 text-left">UID</th>
+              <th class="p-3 border border-gray-300 text-left">Title</th>
+              <th class="p-3 border border-gray-300 text-left">Date & Time</th>
+              <th class="p-3 border border-gray-300 text-left">Total Price (৳)</th>
+              <th class="p-3 border border-gray-300 text-left">Per Goal (৳)</th>
+              <th class="p-3 border border-gray-300 text-left">Entry Fee (৳)</th>
             </tr>
-          `;
-        });
+          </thead>
+          <tbody id="participantsTableBody">
+            <tr><td colspan="7" class="p-4 text-center text-gray-500">Loading participants...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
 
-        participantsTableBody.innerHTML = rowsHtml;
+  <!-- Firebase and JS Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collectionGroup, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-      } catch (error) {
-        participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-600">Error: ${error.message}</td></tr>`;
-        console.error("Error loading participants:", error);
-      }
-    }
+    const firebaseConfig = {
+      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
+      authDomain: "dlstournament-31ac1.firebaseapp.com",
+      projectId: "dlstournament-31ac1",
+      storageBucket: "dlstournament-31ac1.appspot.com",
+      messagingSenderId: "874377019055",
+      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
+      measurementId: "G-0DGFJEV6GL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const participantsTableBody = document.getElementById("participantsTableBody");
+
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        loadParticipants();
+      }
+    });
+
+    async function loadParticipants() {
+      try {
+        const snapshot = await collectionGroup(db, "participants").get();
+
+        if (snapshot.empty) {
+          participantsTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No participants found.</td></tr>`;
+          return;
+        }
+
+        let rowsHtml = "";
+
+        for (const docSnap of snapshot.docs) {
+          const participant = docSnap.data();
+          const uid = docSnap.id;
+          
+          // Get parent match document
+          const matchRef = docSnap.ref.parent.parent;
+          const matchSnap = await getDoc(matchRef);
+          const match = matchSnap.exists() ? matchSnap.data() : {};
+
+          rowsHtml += `
+            <tr class="hover:bg-gray-50 border-t">
+              <td class="p-3 border border-gray-300 break-words">${participant.teamName || "N/A"}</td>
+              <td class="p-3 border border-gray-300 break-words">${uid}</td>
+              <td class="p-3 border border-gray-300 break-words">${match.title || "N/A"}</td>
+              <td class="p-3 border border-gray-300 break-words">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</td>
+              <td class="p-3 border border-gray-300 break-words">${match.totalPrice || 0}</td>
+              <td class="p-3 border border-gray-300 break-words">${match.perGoal || 0}</td>
+              <td class="p-3 border border-gray-300 break-words">${match.entryFee || 0}</td>
+            </tr>
+          `;
+        }
+
+        participantsTableBody.innerHTML = rowsHtml;
+
+      } catch (error) {
+        participantsTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600">Error: ${error.message}</td></tr>`;
+        console.error("Error loading participants:", error);
+      }
+    }
   </script>
 </body>
 </html>
