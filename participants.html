@@ -30,7 +30,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collectionGroup, getDocs, getDoc, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collectionGroup, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
@@ -69,7 +69,6 @@
 
         const matchMap = {};
 
-        // Group participants by match
         for (const docSnap of querySnapshot.docs) {
           const participant = docSnap.data();
           const uid = docSnap.id;
@@ -83,11 +82,8 @@
             const matchSnap = await getDoc(matchRef);
             if (matchSnap.exists()) {
               matchMap[matchId] = {
-                id: matchId,
-                matchRef,
                 match: matchSnap.data(),
-                teams: [],
-                winner: matchSnap.data().winner || null // আগের winner থাকলে ধরবে
+                teams: []
               };
             }
           }
@@ -98,22 +94,14 @@
           });
         }
 
-        // Clear container first
-        participantsContainer.innerHTML = "";
-
         for (const [matchId, data] of Object.entries(matchMap)) {
-          const { match, teams, winner, matchRef } = data;
+          const { match, teams } = data;
 
           const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
           const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
 
-          // Create card element
           const card = document.createElement("div");
           card.className = "bg-white rounded-2xl shadow p-5 border border-gray-200";
-
-          // Check which team is winner for styling
-          const isTeam1Winner = winner === team1.uid;
-          const isTeam2Winner = winner === team2.uid;
 
           card.innerHTML = `
             <div class="text-center mb-4">
@@ -121,80 +109,27 @@
               <p class="text-gray-600 text-sm">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
             </div>
 
-            <div class="flex justify-between text-sm text-gray-700 px-2 mb-2">
+            <div class="flex justify-between text-sm text-gray-700 px-2">
               <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
               <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
               <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
             </div>
 
-            <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-4">
-              <div class="flex-1 text-center cursor-pointer rounded-lg p-2 ${isTeam1Winner ? 'bg-green-200 text-green-900 font-bold' : 'hover:bg-gray-100'}" data-team-uid="${team1.uid}" data-match-id="${matchId}" data-match-ref="${matchRef.path}">
+            <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-6">
+              <div class="flex-1 text-center">
                 <div>${team1.teamName}</div>
                 <div class="text-xs text-gray-400 break-all">${team1.uid}</div>
               </div>
-              <span class="text-gray-500 font-bold">VS</span>
-              <div class="flex-1 text-center cursor-pointer rounded-lg p-2 ${isTeam2Winner ? 'bg-green-200 text-green-900 font-bold' : 'hover:bg-gray-100'}" data-team-uid="${team2.uid}" data-match-id="${matchId}" data-match-ref="${matchRef.path}">
+              <span class="text-gray-500">VS</span>
+              <div class="flex-1 text-center">
                 <div>${team2.teamName}</div>
                 <div class="text-xs text-gray-400 break-all">${team2.uid}</div>
               </div>
             </div>
-            <p class="text-center text-sm text-gray-500 italic mb-2">Click on a team to mark as winner</p>
           `;
 
           participantsContainer.appendChild(card);
         }
-
-        // Add event listeners for win selection
-        const teamDivs = participantsContainer.querySelectorAll('[data-team-uid]');
-        teamDivs.forEach(div => {
-          div.addEventListener('click', async e => {
-            const teamUid = div.getAttribute('data-team-uid');
-            const matchId = div.getAttribute('data-match-id');
-            const matchRefPath = div.getAttribute('data-match-ref');
-
-            if (!teamUid || !matchId || !matchRefPath) return;
-
-            // Confirm action
-            if (!confirm(`Mark team with UID ${teamUid} as the winner for match ${matchId}?`)) return;
-
-            try {
-              // Update winner field in match document
-              const matchDocRef = doc(db, matchRefPath);
-
-              // Get match document snapshot to get totalPrice
-              const matchSnap = await getDoc(matchDocRef);
-              if (!matchSnap.exists()) {
-                alert("Match not found!");
-                return;
-              }
-              const matchData = matchSnap.data();
-              const totalPrice = matchData.totalPrice || 0;
-
-              // Update match winner
-              await updateDoc(matchDocRef, {
-                winner: teamUid
-              });
-
-              // Update winner team's user balance by totalPrice
-              // Assuming users are stored in a collection 'users' with doc id = teamUid (participant id)
-              const userDocRef = doc(db, "users", teamUid);
-
-              // Atomically increment user balance
-              await updateDoc(userDocRef, {
-                balance: increment(totalPrice)
-              });
-
-              alert("Winner updated and balance added!");
-
-              // Refresh the UI by reloading participants
-              loadParticipants();
-
-            } catch (err) {
-              console.error("Error updating winner:", err);
-              alert("Error updating winner: " + err.message);
-            }
-          });
-        });
 
       } catch (error) {
         loadingMessage.textContent = `Error: ${error.message}`;
