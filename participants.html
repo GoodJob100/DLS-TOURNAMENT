@@ -20,23 +20,8 @@
   <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
     <div class="bg-white shadow rounded p-4 mt-6">
       <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
-      <div class="overflow-x-auto max-h-[500px]">
-        <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[900px]">
-          <thead class="bg-gray-100 sticky top-0 z-10">
-            <tr>
-              <th class="p-3 border border-gray-300 text-left">Team Name</th>
-              <th class="p-3 border border-gray-300 text-left">UID</th>
-              <th class="p-3 border border-gray-300 text-left">Match Title</th>
-              <th class="p-3 border border-gray-300 text-left">Date & Time</th>
-              <th class="p-3 border border-gray-300 text-left">Total Price (৳)</th>
-              <th class="p-3 border border-gray-300 text-left">Per Goal (৳)</th>
-              <th class="p-3 border border-gray-300 text-left">Entry Fee (৳)</th>
-            </tr>
-          </thead>
-          <tbody id="participantsTableBody">
-            <tr><td colspan="7" class="p-4 text-center text-gray-500">Loading participants...</td></tr>
-          </tbody>
-        </table>
+      <div id="participantsContainer" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="col-span-full text-center text-gray-500" id="loadingMessage">Loading participants...</div>
       </div>
     </div>
   </main>
@@ -61,7 +46,8 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const participantsTableBody = document.getElementById("participantsTableBody");
+    const participantsContainer = document.getElementById("participantsContainer");
+    const loadingMessage = document.getElementById("loadingMessage");
 
     onAuthStateChanged(auth, user => {
       if (!user) {
@@ -76,11 +62,11 @@
         const querySnapshot = await getDocs(collectionGroup(db, "participants"));
 
         if (querySnapshot.empty) {
-          participantsTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No participants found.</td></tr>`;
+          loadingMessage.textContent = "No participants found.";
           return;
         }
 
-        let rowsHtml = "";
+        loadingMessage.remove();
 
         for (const docSnap of querySnapshot.docs) {
           const participant = docSnap.data();
@@ -95,23 +81,24 @@
             }
           }
 
-          rowsHtml += `
-            <tr class="hover:bg-gray-50 border-t">
-              <td class="p-3 border border-gray-300 break-words">${participant.teamName || "N/A"}</td>
-              <td class="p-3 border border-gray-300 break-words">${uid}</td>
-              <td class="p-3 border border-gray-300 break-words">${match.title || "N/A"}</td>
-              <td class="p-3 border border-gray-300 break-words">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</td>
-              <td class="p-3 border border-gray-300 break-words">${match.totalPrice || 0}</td>
-              <td class="p-3 border border-gray-300 break-words">${match.perGoal || 0}</td>
-              <td class="p-3 border border-gray-300 break-words">${match.entryFee || 0}</td>
-            </tr>
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-2xl shadow p-4 border border-gray-200";
+          card.innerHTML = `
+            <h3 class="text-lg font-semibold text-blue-700 mb-2">${match.title || "Unknown Match"}</h3>
+            <p><strong class="text-gray-600">Team:</strong> ${participant.teamName || "N/A"}</p>
+            <p><strong class="text-gray-600">UID:</strong> ${uid}</p>
+            <p><strong class="text-gray-600">Date & Time:</strong> ${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
+            <div class="mt-2 text-sm text-gray-700 space-y-1">
+              <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
+              <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
+              <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
+            </div>
           `;
+          participantsContainer.appendChild(card);
         }
 
-        participantsTableBody.innerHTML = rowsHtml;
-
       } catch (error) {
-        participantsTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600">Error: ${error.message}</td></tr>`;
+        loadingMessage.textContent = `Error: ${error.message}`;
         console.error("Error loading participants:", error);
       }
     }
