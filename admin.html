@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col lg:flex-row">
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-64 bg-blue-800 text-white min-h-screen p-5 space-y-6 fixed lg:static top-0 left-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 z-50 shadow-lg">
+  <aside
+    id="sidebar"
+    class="w-64 bg-blue-800 text-white min-h-screen p-5 space-y-6 fixed lg:static top-0 left-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 z-50 shadow-lg"
+  >
     <div class="flex justify-between items-center mb-8">
       <h2 class="text-2xl font-bold">Admin Panel</h2>
       <button id="closeSidebar" class="lg:hidden text-white text-2xl">
@@ -70,7 +73,29 @@
               </tr>
             </thead>
             <tbody id="usersTableBody">
-              <tr><td colspan="4" class="p-4 text-center text-gray-500">Loading users...</td></tr>
+              <tr>
+                <td colspan="4" class="p-4 text-center text-gray-500">Loading users...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Participants Section -->
+      <div class="bg-white shadow rounded p-4">
+        <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
+        <div class="overflow-x-auto max-h-[400px]">
+          <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[400px]">
+            <thead class="bg-gray-100 sticky top-0 z-10">
+              <tr>
+                <th class="p-3 border border-gray-300 text-left">Participant Name</th>
+                <th class="p-3 border border-gray-300 text-left">UID</th>
+              </tr>
+            </thead>
+            <tbody id="participantsTableBody">
+              <tr>
+                <td colspan="2" class="p-4 text-center text-gray-500">Loading participants...</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -82,18 +107,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut,
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      doc,
-      updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
@@ -111,6 +126,7 @@
     const db = getFirestore(app);
 
     const usersTableBody = document.getElementById("usersTableBody");
+    const participantsTableBody = document.getElementById("participantsTableBody");
     const logoutBtn = document.getElementById("logoutBtn");
     const totalUsersCountElem = document.getElementById("totalUsersCount");
 
@@ -125,6 +141,7 @@
       } else {
         loadTotalUsersCount();
         loadUsers();
+        loadParticipants();
       }
     });
 
@@ -188,18 +205,51 @@
               return;
             }
 
-            await updateDoc(doc(db, "users", uid), {
-              balance: newBalance,
-              role: newRole
-            });
-
-            alert("Updated successfully.");
+            try {
+              await updateDoc(doc(db, "users", uid), {
+                balance: newBalance,
+                role: newRole
+              });
+              alert("Updated successfully.");
+            } catch (error) {
+              alert("Error updating user: " + error.message);
+            }
           });
         });
 
       } catch (error) {
         usersTableBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-600">Error loading users: ${error.message}</td></tr>`;
         console.error("Error loading users:", error);
+      }
+    }
+
+    // New function to load participants
+    async function loadParticipants() {
+      try {
+        // Adjust collection name if different
+        const participantsCol = collection(db, "participants");
+        const participantsSnapshot = await getDocs(participantsCol);
+
+        if (participantsSnapshot.empty) {
+          participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center">No participants found.</td></tr>`;
+          return;
+        }
+
+        let rowsHtml = "";
+        participantsSnapshot.forEach(docSnap => {
+          const participant = docSnap.data();
+          rowsHtml += `
+            <tr class="hover:bg-gray-50 border-t">
+              <td class="p-3 border border-gray-300 break-words max-w-xs">${participant.name || "N/A"}</td>
+              <td class="p-3 border border-gray-300 break-words max-w-xs">${docSnap.id}</td>
+            </tr>
+          `;
+        });
+
+        participantsTableBody.innerHTML = rowsHtml;
+      } catch (error) {
+        participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-600">Error loading participants: ${error.message}</td></tr>`;
+        console.error("Error loading participants:", error);
       }
     }
 
