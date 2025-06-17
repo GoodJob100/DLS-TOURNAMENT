@@ -9,6 +9,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col lg:flex-row">
+
   <header class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-30 w-full">
     <h1 class="text-xl font-bold">Participants</h1>
     <a href="admin.html" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-200 transition">
@@ -64,13 +65,16 @@
         }
 
         loadingMessage.remove();
+
         const matchMap = {};
 
         for (const docSnap of querySnapshot.docs) {
           const participant = docSnap.data();
           const uid = docSnap.id;
+
           const matchRef = docSnap.ref.parent.parent;
           let matchId = matchRef?.id;
+
           if (!matchId) continue;
 
           if (!matchMap[matchId]) {
@@ -86,15 +90,15 @@
 
           matchMap[matchId].teams.push({
             teamName: participant.teamName || "N/A",
-            uid: uid,
-            participantRef: docSnap.ref
+            uid: uid
           });
         }
 
         for (const [matchId, data] of Object.entries(matchMap)) {
           const { match, teams } = data;
-          const team1 = teams[0] || { teamName: "Team A", uid: "N/A", participantRef: null };
-          const team2 = teams[1] || { teamName: "Team B", uid: "N/A", participantRef: null };
+
+          const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
+          const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
 
           const card = document.createElement("div");
           card.className = "bg-white rounded-2xl shadow p-5 border border-gray-200";
@@ -112,19 +116,21 @@
             </div>
 
             <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-6">
-              ${[team1, team2].map((team, idx) => `
-                <div class="flex-1 text-center">
-                  <div id="team-name-${team.uid}">${team.teamName}</div>
-                  <input id="team-input-${team.uid}" type="text" class="hidden mt-2 border px-2 py-1 text-sm w-full rounded" value="${team.teamName}" />
-                  <div class="text-xs text-gray-400 break-all">${team.uid}</div>
-                  <button data-matchid="${matchId}" data-uid="${team.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
-                    Declare ${team.teamName} Winner
-                  </button>
-                  <button data-uid="${team.uid}" data-ref="${team.participantRef.path}" class="edit-btn mt-2 ml-1 bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition text-sm">
-                    Edit
-                  </button>
-                </div>
-              `).join('<span class="text-gray-500">VS</span>')}
+              <div class="flex-1 text-center">
+                <div>${team1.teamName}</div>
+                <div class="text-xs text-gray-400 break-all">${team1.uid}</div>
+                <button data-matchid="${matchId}" data-uid="${team1.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
+                  Declare ${team1.teamName} Winner
+                </button>
+              </div>
+              <span class="text-gray-500">VS</span>
+              <div class="flex-1 text-center">
+                <div>${team2.teamName}</div>
+                <div class="text-xs text-gray-400 break-all">${team2.uid}</div>
+                <button data-matchid="${matchId}" data-uid="${team2.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
+                  Declare ${team2.teamName} Winner
+                </button>
+              </div>
             </div>
 
             <div class="text-center text-sm text-gray-500" id="status-${matchId}"></div>
@@ -133,23 +139,27 @@
           participantsContainer.appendChild(card);
         }
 
-        // Declare Winner Logic
-        document.querySelectorAll(".win-button").forEach(button => {
+        const winButtons = document.querySelectorAll(".win-button");
+        winButtons.forEach(button => {
           button.addEventListener("click", async (e) => {
             const btn = e.currentTarget;
             btn.disabled = true;
             btn.textContent = "Processing...";
+
             const matchId = btn.dataset.matchid;
             const winnerUid = btn.dataset.uid;
 
             try {
               const matchData = matchMap[matchId];
               if (!matchData) throw new Error("Match data not found");
+
               const totalPrice = matchData.match.totalPrice || 0;
               if (totalPrice <= 0) throw new Error("Invalid totalPrice");
 
               const userDocRef = doc(db, "users", winnerUid);
-              await updateDoc(userDocRef, { balance: increment(totalPrice) });
+              await updateDoc(userDocRef, {
+                balance: increment(totalPrice)  // 🟢 updated to 'balance'
+              });
 
               const statusDiv = document.getElementById(`status-${matchId}`);
               statusDiv.textContent = `Successfully added ৳${totalPrice} to user ${winnerUid} (winner).`;
@@ -157,53 +167,26 @@
               statusDiv.classList.add("text-green-600");
 
               btn.textContent = "Winner Declared ✔️";
+              btn.disabled = true;
 
-              document.querySelectorAll(`.win-button[data-matchid="${matchId}"]`).forEach(otherBtn => {
-                if (otherBtn !== btn) {
+              winButtons.forEach(otherBtn => {
+                if (otherBtn.dataset.matchid === matchId && otherBtn !== btn) {
                   otherBtn.disabled = true;
                   otherBtn.textContent = "Not Winner";
-                  otherBtn.classList.replace("bg-green-500", "bg-gray-400");
+                  otherBtn.classList.remove("bg-green-500");
+                  otherBtn.classList.add("bg-gray-400");
                 }
               });
 
             } catch (error) {
               const statusDiv = document.getElementById(`status-${matchId}`);
               statusDiv.textContent = `Error: ${error.message}`;
-              statusDiv.classList.replace("text-green-600", "text-red-500");
+              statusDiv.classList.remove("text-green-600");
+              statusDiv.classList.add("text-red-500");
+
               btn.textContent = "Declare Winner";
               btn.disabled = false;
               console.error("Error declaring winner:", error);
-            }
-          });
-        });
-
-        // Edit button logic
-        document.querySelectorAll(".edit-btn").forEach(button => {
-          button.addEventListener("click", async (e) => {
-            const uid = button.dataset.uid;
-            const path = button.dataset.ref;
-            const nameDiv = document.getElementById(`team-name-${uid}`);
-            const input = document.getElementById(`team-input-${uid}`);
-
-            if (input.classList.contains("hidden")) {
-              nameDiv.classList.add("hidden");
-              input.classList.remove("hidden");
-              button.textContent = "Save";
-              button.classList.replace("bg-yellow-500", "bg-blue-600");
-            } else {
-              try {
-                const newName = input.value.trim();
-                if (newName === "") return;
-                await updateDoc(doc(db, path), { teamName: newName });
-                nameDiv.textContent = newName;
-                input.classList.add("hidden");
-                nameDiv.classList.remove("hidden");
-                button.textContent = "Edit";
-                button.classList.replace("bg-blue-600", "bg-yellow-500");
-              } catch (err) {
-                alert("Error updating team name: " + err.message);
-                console.error(err);
-              }
             }
           });
         });
