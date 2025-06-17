@@ -1,141 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Participants</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Participants</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col lg:flex-row">
 
-  <header class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-30 w-full">
-    <h1 class="text-xl font-bold">Participants</h1>
-    <a href="admin.html" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-200 transition">
-      Back to Admin Panel
-    </a>
-  </header>
+  <header class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-30 w-full">
+    <h1 class="text-xl font-bold">Participants</h1>
+    <a href="admin.html" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-200 transition">
+      Back to Admin Panel
+    </a>
+  </header>
 
-  <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
-    <div class="bg-white shadow rounded p-4 mt-6">
-      <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
-      <div id="participantsContainer" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2">
-        <div class="col-span-full text-center text-gray-500" id="loadingMessage">Loading participants...</div>
-      </div>
-    </div>
-  </main>
+  <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
+    <div class="bg-white shadow rounded p-4 mt-6">
+      <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
+      <div id="participantsContainer" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2">
+        <div class="col-span-full text-center text-gray-500" id="loadingMessage">Loading participants...</div>
+      </div>
+    </div>
+  </main>
 
-  <!-- Firebase and JS Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collectionGroup, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <!-- Firebase and JS Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collectionGroup, getDocs, getDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
-      authDomain: "dlstournament-31ac1.firebaseapp.com",
-      projectId: "dlstournament-31ac1",
-      storageBucket: "dlstournament-31ac1.appspot.com",
-      messagingSenderId: "874377019055",
-      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
-      measurementId: "G-0DGFJEV6GL"
-    };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
+      authDomain: "dlstournament-31ac1.firebaseapp.com",
+      projectId: "dlstournament-31ac1",
+      storageBucket: "dlstournament-31ac1.appspot.com",
+      messagingSenderId: "874377019055",
+      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
+      measurementId: "G-0DGFJEV6GL"
+    };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    const participantsContainer = document.getElementById("participantsContainer");
-    const loadingMessage = document.getElementById("loadingMessage");
+    const participantsContainer = document.getElementById("participantsContainer");
+    const loadingMessage = document.getElementById("loadingMessage");
 
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = "login.html";
-      } else {
-        loadParticipants();
-      }
-    });
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        loadParticipants();
+      }
+    });
 
-    async function loadParticipants() {
-      try {
-        const querySnapshot = await getDocs(collectionGroup(db, "participants"));
-        if (querySnapshot.empty) {
-          loadingMessage.textContent = "No participants found.";
-          return;
-        }
+    async function loadParticipants() {
+      try {
+        const querySnapshot = await getDocs(collectionGroup(db, "participants"));
+        if (querySnapshot.empty) {
+          loadingMessage.textContent = "No participants found.";
+          return;
+        }
 
-        loadingMessage.remove();
+        loadingMessage.remove();
 
-        const matchMap = {};
+        const matchMap = {};
 
-        for (const docSnap of querySnapshot.docs) {
-          const participant = docSnap.data();
-          const uid = docSnap.id;
+        // Group participants by matchId
+        for (const docSnap of querySnapshot.docs) {
+          const participant = docSnap.data();
+          const uid = docSnap.id;
 
-          const matchRef = docSnap.ref.parent.parent;
-          let matchId = matchRef?.id;
+          const matchRef = docSnap.ref.parent.parent;
+          let matchId = matchRef?.id;
 
-          if (!matchId) continue;
+          if (!matchId) continue;
 
-          if (!matchMap[matchId]) {
-            const matchSnap = await getDoc(matchRef);
-            if (matchSnap.exists()) {
-              matchMap[matchId] = {
-                match: matchSnap.data(),
-                teams: []
-              };
-            }
-          }
+          if (!matchMap[matchId]) {
+            const matchSnap = await getDoc(matchRef);
+            if (matchSnap.exists()) {
+              matchMap[matchId] = {
+                matchRef,
+                match: matchSnap.data(),
+                teams: []
+              };
+            }
+          }
 
-          matchMap[matchId].teams.push({
-            teamName: participant.teamName || "N/A",
-            uid: uid
-          });
-        }
+          matchMap[matchId].teams.push({
+            teamName: participant.teamName || "N/A",
+            uid: uid,
+            participantRef: docSnap.ref,
+            mainBalance: participant.mainBalance || 0
+          });
+        }
 
-        for (const [matchId, data] of Object.entries(matchMap)) {
-          const { match, teams } = data;
+        for (const [matchId, data] of Object.entries(matchMap)) {
+          const { match, teams, matchRef } = data;
 
-          const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
-          const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
+          // Check if winner already set in match doc (optional)
+          const winnerUid = match.winnerUid || null;
 
-          const card = document.createElement("div");
-          card.className = "bg-white rounded-2xl shadow p-5 border border-gray-200";
+          const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
+          const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
 
-          card.innerHTML = `
-            <div class="text-center mb-4">
-              <h3 class="text-xl font-bold text-blue-700">${match.title || "Unknown Match"}</h3>
-              <p class="text-gray-600 text-sm">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
-            </div>
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-2xl shadow p-5 border border-gray-200";
 
-            <div class="flex justify-between text-sm text-gray-700 px-2">
-              <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
-              <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
-              <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
-            </div>
+          card.innerHTML = `
+            <div class="text-center mb-4">
+              <h3 class="text-xl font-bold text-blue-700">${match.title || "Unknown Match"}</h3>
+              <p class="text-gray-600 text-sm">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
+            </div>
 
-            <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-6">
-              <div class="flex-1 text-center">
-                <div>${team1.teamName}</div>
-                <div class="text-xs text-gray-400 break-all">${team1.uid}</div>
-              </div>
-              <span class="text-gray-500">VS</span>
-              <div class="flex-1 text-center">
-                <div>${team2.teamName}</div>
-                <div class="text-xs text-gray-400 break-all">${team2.uid}</div>
-              </div>
-            </div>
-          `;
+            <div class="flex justify-between text-sm text-gray-700 px-2 mb-4">
+              <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
+              <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
+              <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
+            </div>
 
-          participantsContainer.appendChild(card);
-        }
+            <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-6">
+              <div class="flex-1 text-center">
+                <div>${team1.teamName}</div>
+                <div class="text-xs text-gray-400 break-all mb-2">${team1.uid}</div>
+                <button 
+                  class="winner-btn bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 disabled:opacity-50" 
+                  data-match-id="${matchId}" 
+                  data-team-uid="${team1.uid}"
+                  ${winnerUid ? (winnerUid === team1.uid ? "disabled" : "disabled") : ""}
+                >
+                  ${winnerUid === team1.uid ? "Winner" : "Mark Winner"}
+                </button>
+              </div>
+              <span class="text-gray-500">VS</span>
+              <div class="flex-1 text-center">
+                <div>${team2.teamName}</div>
+                <div class="text-xs text-gray-400 break-all mb-2">${team2.uid}</div>
+                <button 
+                  class="winner-btn bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 disabled:opacity-50" 
+                  data-match-id="${matchId}" 
+                  data-team-uid="${team2.uid}"
+                  ${winnerUid ? (winnerUid === team2.uid ? "disabled" : "disabled") : ""}
+                >
+                  ${winnerUid === team2.uid ? "Winner" : "Mark Winner"}
+                </button>
+              </div>
+            </div>
 
-      } catch (error) {
-        loadingMessage.textContent = `Error: ${error.message}`;
-        console.error("Error loading participants:", error);
-      }
-    }
-  </script>
+            <div class="text-center text-sm text-red-600 winner-message"></div>
+          `;
+
+          participantsContainer.appendChild(card);
+        }
+
+        // Add event listeners to winner buttons
+        document.querySelectorAll(".winner-btn").forEach(button => {
+          button.addEventListener("click", async (e) => {
+            const btn = e.currentTarget;
+            const matchId = btn.dataset.matchId;
+            const teamUid = btn.dataset.teamUid;
+
+            btn.disabled = true;
+            btn.textContent = "Processing...";
+
+            try {
+              // Get participant doc ref for the winner
+              // We find the participant doc by querying participants subcollection of the match
+              const participantsCol = collectionGroup(db, "participants");
+
+              // But to find the exact participant docRef, we use matchId and teamUid
+              // Since we already have matchRef for each match, easier to get participants by path
+              // So we do a direct get of the participant doc at:
+              // matches/{matchId}/participants/{teamUid}
+              const participantDocRef = doc(db, "matches", matchId, "participants", teamUid);
+              const participantSnap = await getDoc(participantDocRef);
+              if (!participantSnap.exists()) throw new Error("Participant not found");
+
+              const participantData = participantSnap.data();
+              const currentBalance = participantData.mainBalance || 0;
+              const totalPrice = (await getDoc(doc(db, "matches", matchId))).data()?.totalPrice || 0;
+
+              // Update the participant mainBalance by adding totalPrice
+              await updateDoc(participantDocRef, {
+                mainBalance: currentBalance + totalPrice
+              });
+
+              // Also update the match document to set the winnerUid, so no double winners
+              const matchDocRef = doc(db, "matches", matchId);
+              await updateDoc(matchDocRef, {
+                winnerUid: teamUid
+              });
+
+              // Update UI: disable all winner buttons for this match
+              document.querySelectorAll(`button.winner-btn[data-match-id="${matchId}"]`).forEach(b => {
+                b.disabled = true;
+                b.textContent = b.dataset.teamUid === teamUid ? "Winner" : "Loser";
+              });
+
+              // Show success message
+              btn.parentElement.parentElement.querySelector(".winner-message").textContent = "Winner marked successfully!";
+
+            } catch (error) {
+              console.error(error);
+              btn.disabled = false;
+              btn.textContent = "Mark Winner";
+              btn.parentElement.parentElement.querySelector(".winner-message").textContent = `Error: ${error.message}`;
+            }
+          });
+        });
+
+      } catch (error) {
+        loadingMessage.textContent = `Error: ${error.message}`;
+        console.error("Error loading participants:", error);
+      }
+    }
+  </script>
 </body>
 </html>
