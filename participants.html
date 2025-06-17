@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel - Participants</title>
+  <title>Participants</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col lg:flex-row">
 
-  <header class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-30">
+  <header class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-30 w-full">
     <h1 class="text-xl font-bold">Participants</h1>
     <a href="admin.html" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-200 transition">
       Back to Admin Panel
@@ -18,16 +18,15 @@
   </header>
 
   <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
-    <!-- Participants Section -->
     <div class="bg-white shadow rounded p-4 mt-6">
       <h2 class="text-xl font-semibold text-blue-700 mb-4">Participants</h2>
-      <div class="overflow-x-auto max-h-[600px]">
+      <div class="overflow-x-auto max-h-[500px]">
         <table class="w-full text-sm border border-gray-300 rounded overflow-hidden min-w-[900px]">
           <thead class="bg-gray-100 sticky top-0 z-10">
             <tr>
               <th class="p-3 border border-gray-300 text-left">Team Name</th>
               <th class="p-3 border border-gray-300 text-left">UID</th>
-              <th class="p-3 border border-gray-300 text-left">Title</th>
+              <th class="p-3 border border-gray-300 text-left">Match Title</th>
               <th class="p-3 border border-gray-300 text-left">Date & Time</th>
               <th class="p-3 border border-gray-300 text-left">Total Price (৳)</th>
               <th class="p-3 border border-gray-300 text-left">Per Goal (৳)</th>
@@ -46,7 +45,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collectionGroup, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collectionGroup, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
@@ -61,6 +60,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
     const participantsTableBody = document.getElementById("participantsTableBody");
 
     onAuthStateChanged(auth, user => {
@@ -73,23 +73,27 @@
 
     async function loadParticipants() {
       try {
-        const snapshot = await collectionGroup(db, "participants").get();
+        const querySnapshot = await getDocs(collectionGroup(db, "participants"));
 
-        if (snapshot.empty) {
+        if (querySnapshot.empty) {
           participantsTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">No participants found.</td></tr>`;
           return;
         }
 
         let rowsHtml = "";
 
-        for (const docSnap of snapshot.docs) {
+        for (const docSnap of querySnapshot.docs) {
           const participant = docSnap.data();
           const uid = docSnap.id;
-          
-          // Get parent match document
+
           const matchRef = docSnap.ref.parent.parent;
-          const matchSnap = await getDoc(matchRef);
-          const match = matchSnap.exists() ? matchSnap.data() : {};
+          let match = {};
+          if (matchRef) {
+            const matchSnap = await getDoc(matchRef);
+            if (matchSnap.exists()) {
+              match = matchSnap.data();
+            }
+          }
 
           rowsHtml += `
             <tr class="hover:bg-gray-50 border-t">
