@@ -10,46 +10,12 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col lg:flex-row">
 
-  <!-- Sidebar -->
-  <aside id="sidebar" class="w-64 bg-blue-800 text-white min-h-screen p-5 space-y-6 fixed lg:static top-0 left-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 z-50 shadow-lg">
-    <div class="flex justify-between items-center mb-8">
-      <h2 class="text-2xl font-bold">Admin Panel</h2>
-      <button id="closeSidebar" class="lg:hidden text-white text-2xl">
-        <i class="fas fa-xmark"></i>
-      </button>
-    </div>
-    <nav class="flex flex-col space-y-4 text-sm">
-      <a href="admin.html" class="flex items-center space-x-3 hover:bg-blue-700 p-2 rounded transition">
-        <i class="fas fa-home"></i><span>Dashboard</span>
-      </a>
-      <a href="addmatch.html" class="flex items-center space-x-3 hover:bg-blue-700 p-2 rounded transition">
-        <i class="fas fa-clipboard-list"></i><span>Add Match</span>
-      </a>
-      <a href="matchlist.html" class="flex items-center space-x-3 hover:bg-blue-700 p-2 rounded transition">
-        <i class="fas fa-clipboard-list"></i><span>Match List</span>
-      </a>
-      <a href="pendingmatch.html" class="flex items-center space-x-3 hover:bg-blue-700 p-2 rounded transition">
-        <i class="fas fa-clipboard-list"></i><span>Pending Match</span>
-      </a>
-      <button id="logoutBtn" class="flex items-center space-x-3 hover:bg-red-600 p-2 rounded mt-10 transition">
-        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
-      </button>
-    </nav>
-  </aside>
-
-  <!-- Overlay -->
-  <div id="overlay" class="fixed inset-0 bg-black bg-opacity-40 z-40 hidden lg:hidden"></div>
-
-  <!-- Main Content -->
-  <div class="flex-grow w-full lg:ml-64 min-h-screen flex flex-col">
-    <header class="bg-blue-700 text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-30">
-      <div class="flex items-center space-x-4">
-        <button id="openSidebar" class="lg:hidden text-2xl">
-          <i class="fas fa-bars"></i>
-        </button>
-        <h1 class="text-xl font-bold">Admin Panel</h1>
-      </div>
-    </header>
+  <header class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-30">
+    <h1 class="text-xl font-bold">Participants</h1>
+    <a href="admin.html" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-200 transition">
+      Back to Admin Panel
+    </a>
+  </header>
 
     <main class="p-4 md:p-6 space-y-6 overflow-auto flex-grow">
       <!-- Participants Section -->
@@ -72,90 +38,63 @@
     </main>
   </div>
 
-  <!-- Firebase and JS Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+   <!-- Firebase and JS Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collectionGroup, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
-      authDomain: "dlstournament-31ac1.firebaseapp.com",
-      projectId: "dlstournament-31ac1",
-      storageBucket: "dlstournament-31ac1.appspot.com",
-      messagingSenderId: "874377019055",
-      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
-      measurementId: "G-0DGFJEV6GL"
-    };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
+      authDomain: "dlstournament-31ac1.firebaseapp.com",
+      projectId: "dlstournament-31ac1",
+      storageBucket: "dlstournament-31ac1.appspot.com",
+      messagingSenderId: "874377019055",
+      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
+      measurementId: "G-0DGFJEV6GL"
+    };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    const participantsTableBody = document.getElementById("participantsTableBody");
-    const logoutBtn = document.getElementById("logoutBtn");
+    const participantsTableBody = document.getElementById("participantsTableBody");
 
-    logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.href = "login.html";
-    });
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        loadParticipants();
+      }
+    });
 
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = "login.html";
-      } else {
-        loadParticipants();
-      }
-    });
+    async function loadParticipants() {
+      try {
+        const snapshot = await getDocs(collectionGroup(db, "participants"));
 
-    async function loadParticipants() {
-      try {
-        const snapshot = await getDocs(collectionGroup(db, "participants"));
+        if (snapshot.empty) {
+          participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-500">No participants found.</td></tr>`;
+          return;
+        }
 
-        if (snapshot.empty) {
-          participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-500">No participants found.</td></tr>`;
-          return;
-        }
-
-        let rowsHtml = "";
-        snapshot.forEach(docSnap => {
-          const participant = docSnap.data();
-          rowsHtml += `
-            <tr class="hover:bg-gray-50 border-t">
+        let rowsHtml = "";
+        snapshot.forEach(docSnap => {
+          const participant = docSnap.data();
+          rowsHtml += `
+            <tr class="hover:bg-gray-50 border-t">
               <td class="p-3 border border-gray-300 break-words">${participant.teamName || "N/A"}</td>
               <td class="p-3 border border-gray-300 break-words">${docSnap.id}</td>
             </tr>
-          `;
-        });
+          `;
+        });
 
-        participantsTableBody.innerHTML = rowsHtml;
+        participantsTableBody.innerHTML = rowsHtml;
 
-      } catch (error) {
-        participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-600">Error: ${error.message}</td></tr>`;
-        console.error("Error loading participants:", error);
-      }
-    }
-
-    // Sidebar toggle
-    const sidebar = document.getElementById("sidebar");
-    const overlay = document.getElementById("overlay");
-    const openSidebarBtn = document.getElementById("openSidebar");
-    const closeSidebarBtn = document.getElementById("closeSidebar");
-
-    openSidebarBtn.addEventListener("click", () => {
-      sidebar.classList.remove("-translate-x-full");
-      overlay.classList.remove("hidden");
-    });
-
-    closeSidebarBtn.addEventListener("click", () => {
-      sidebar.classList.add("-translate-x-full");
-      overlay.classList.add("hidden");
-    });
-
-    overlay.addEventListener("click", () => {
-      sidebar.classList.add("-translate-x-full");
-      overlay.classList.add("hidden");
-    });
+      } catch (error) {
+        participantsTableBody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-red-600">Error: ${error.message}</td></tr>`;
+        console.error("Error loading participants:", error);
+      }
+    }
   </script>
 </body>
 </html>
