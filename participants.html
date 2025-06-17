@@ -48,8 +48,6 @@
     const participantsContainer = document.getElementById("participantsContainer");
     const loadingMessage = document.getElementById("loadingMessage");
 
-    let matchMap = {};  // keep globally to use inside event handlers
-
     onAuthStateChanged(auth, user => {
       if (!user) {
         window.location.href = "login.html";
@@ -68,7 +66,7 @@
 
         loadingMessage.remove();
 
-        matchMap = {};  // reset
+        const matchMap = {};
 
         for (const docSnap of querySnapshot.docs) {
           const participant = docSnap.data();
@@ -96,292 +94,107 @@
           });
         }
 
-        participantsContainer.innerHTML = "";
-
         for (const [matchId, data] of Object.entries(matchMap)) {
-          createMatchCard(matchId, data);
+          const { match, teams } = data;
+
+          const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
+          const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
+
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-2xl shadow p-5 border border-gray-200";
+
+          card.innerHTML = `
+            <div class="text-center mb-4">
+              <h3 class="text-xl font-bold text-blue-700">${match.title || "Unknown Match"}</h3>
+              <p class="text-gray-600 text-sm">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
+            </div>
+
+            <div class="flex justify-between text-sm text-gray-700 px-2">
+              <p><strong>Total Price:</strong> ৳${match.totalPrice || 0}</p>
+              <p><strong>Per Goal:</strong> ৳${match.perGoal || 0}</p>
+              <p><strong>Entry Fee:</strong> ৳${match.entryFee || 0}</p>
+            </div>
+
+            <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-6">
+              <div class="flex-1 text-center">
+                <div>${team1.teamName}</div>
+                <div class="text-xs text-gray-400 break-all">${team1.uid}</div>
+                <button data-matchid="${matchId}" data-uid="${team1.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
+                  Declare ${team1.teamName} Winner
+                </button>
+              </div>
+              <span class="text-gray-500">VS</span>
+              <div class="flex-1 text-center">
+                <div>${team2.teamName}</div>
+                <div class="text-xs text-gray-400 break-all">${team2.uid}</div>
+                <button data-matchid="${matchId}" data-uid="${team2.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
+                  Declare ${team2.teamName} Winner
+                </button>
+              </div>
+            </div>
+
+            <div class="text-center text-sm text-gray-500" id="status-${matchId}"></div>
+          `;
+
+          participantsContainer.appendChild(card);
         }
+
+        const winButtons = document.querySelectorAll(".win-button");
+        winButtons.forEach(button => {
+          button.addEventListener("click", async (e) => {
+            const btn = e.currentTarget;
+            btn.disabled = true;
+            btn.textContent = "Processing...";
+
+            const matchId = btn.dataset.matchid;
+            const winnerUid = btn.dataset.uid;
+
+            try {
+              const matchData = matchMap[matchId];
+              if (!matchData) throw new Error("Match data not found");
+
+              const totalPrice = matchData.match.totalPrice || 0;
+              if (totalPrice <= 0) throw new Error("Invalid totalPrice");
+
+              const userDocRef = doc(db, "users", winnerUid);
+              await updateDoc(userDocRef, {
+                balance: increment(totalPrice)  // 🟢 updated to 'balance'
+              });
+
+              const statusDiv = document.getElementById(`status-${matchId}`);
+              statusDiv.textContent = `Successfully added ৳${totalPrice} to user ${winnerUid} (winner).`;
+              statusDiv.classList.remove("text-red-500");
+              statusDiv.classList.add("text-green-600");
+
+              btn.textContent = "Winner Declared ✔️";
+              btn.disabled = true;
+
+              winButtons.forEach(otherBtn => {
+                if (otherBtn.dataset.matchid === matchId && otherBtn !== btn) {
+                  otherBtn.disabled = true;
+                  otherBtn.textContent = "Not Winner";
+                  otherBtn.classList.remove("bg-green-500");
+                  otherBtn.classList.add("bg-gray-400");
+                }
+              });
+
+            } catch (error) {
+              const statusDiv = document.getElementById(`status-${matchId}`);
+              statusDiv.textContent = `Error: ${error.message}`;
+              statusDiv.classList.remove("text-green-600");
+              statusDiv.classList.add("text-red-500");
+
+              btn.textContent = "Declare Winner";
+              btn.disabled = false;
+              console.error("Error declaring winner:", error);
+            }
+          });
+        });
+
       } catch (error) {
         loadingMessage.textContent = `Error: ${error.message}`;
         console.error("Error loading participants:", error);
       }
-    }
-
-    function createMatchCard(matchId, data) {
-      const { match, teams } = data;
-
-      const team1 = teams[0] || { teamName: "Team A", uid: "N/A" };
-      const team2 = teams[1] || { teamName: "Team B", uid: "N/A" };
-
-      const card = document.createElement("div");
-      card.className = "bg-white rounded-2xl shadow p-5 border border-gray-200";
-      card.id = `match-card-${matchId}`;
-
-      card.innerHTML = `
-        <div class="text-center mb-4" id="display-header-${matchId}">
-          <h3 class="text-xl font-bold text-blue-700" id="title-${matchId}">${escapeHtml(match.title || "Unknown Match")}</h3>
-          <p class="text-gray-600 text-sm" id="dateTime-${matchId}">${match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A"}</p>
-        </div>
-
-        <div class="flex justify-between text-sm text-gray-700 px-2" id="display-info-${matchId}">
-          <p><strong>Total Price:</strong> ৳<span id="totalPrice-${matchId}">${match.totalPrice || 0}</span></p>
-          <p><strong>Per Goal:</strong> ৳<span id="perGoal-${matchId}">${match.perGoal || 0}</span></p>
-          <p><strong>Entry Fee:</strong> ৳<span id="entryFee-${matchId}">${match.entryFee || 0}</span></p>
-        </div>
-
-        <div class="flex justify-between items-center text-lg font-semibold text-gray-700 mb-6" id="teams-${matchId}">
-          <div class="flex-1 text-center">
-            <div>${escapeHtml(team1.teamName)}</div>
-            <button data-matchid="${matchId}" data-uid="${team1.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
-              Declare ${escapeHtml(team1.teamName)} Winner
-            </button>
-          </div>
-          <span class="text-gray-500">VS</span>
-          <div class="flex-1 text-center">
-            <div>${escapeHtml(team2.teamName)}</div>
-            <button data-matchid="${matchId}" data-uid="${team2.uid}" class="win-button mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition text-sm">
-              Declare ${escapeHtml(team2.teamName)} Winner
-            </button>
-          </div>
-        </div>
-
-        <div class="text-center text-sm text-gray-500" id="status-${matchId}"></div>
-
-        <div class="text-center mt-4">
-          <button id="edit-btn-${matchId}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-            <i class="fas fa-edit"></i> Edit Match
-          </button>
-        </div>
-      `;
-
-      participantsContainer.appendChild(card);
-
-      // Attach event listeners
-      const winButtons = card.querySelectorAll(".win-button");
-      winButtons.forEach(button => {
-        button.addEventListener("click", () => declareWinner(button));
-      });
-
-      const editBtn = document.getElementById(`edit-btn-${matchId}`);
-      editBtn.addEventListener("click", () => enterEditMode(matchId));
-    }
-
-    // Escape HTML to avoid injection
-    function escapeHtml(text) {
-      return text.replace(/[&<>"']/g, function(m) {
-        return ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        })[m];
-      });
-    }
-
-    async function declareWinner(button) {
-      button.disabled = true;
-      const originalText = button.textContent;
-      button.textContent = "Processing...";
-
-      const matchId = button.dataset.matchid;
-      const winnerUid = button.dataset.uid;
-
-      try {
-        const matchData = matchMap[matchId];
-        if (!matchData) throw new Error("Match data not found");
-
-        const totalPrice = matchData.match.totalPrice || 0;
-        if (totalPrice <= 0) throw new Error("Invalid totalPrice");
-
-        const userDocRef = doc(db, "users", winnerUid);
-        await updateDoc(userDocRef, {
-          balance: increment(totalPrice)
-        });
-
-        const statusDiv = document.getElementById(`status-${matchId}`);
-        statusDiv.textContent = `Successfully added ৳${totalPrice} to user (winner).`;
-        statusDiv.classList.remove("text-red-500");
-        statusDiv.classList.add("text-green-600");
-
-        button.textContent = "Winner Declared ✔️";
-
-        // Disable other win buttons for this match
-        const card = document.getElementById(`match-card-${matchId}`);
-        const winButtons = card.querySelectorAll(".win-button");
-        winButtons.forEach(btn => {
-          if (btn !== button) {
-            btn.disabled = true;
-            btn.textContent = "Not Winner";
-            btn.classList.remove("bg-green-500");
-            btn.classList.add("bg-gray-400");
-          }
-        });
-
-      } catch (error) {
-        const statusDiv = document.getElementById(`status-${matchId}`);
-        statusDiv.textContent = `Error: ${error.message}`;
-        statusDiv.classList.remove("text-green-600");
-        statusDiv.classList.add("text-red-500");
-
-        button.textContent = originalText;
-        button.disabled = false;
-        console.error("Error declaring winner:", error);
-      }
-    }
-
-    // Enter edit mode for a match card
-    function enterEditMode(matchId) {
-      const data = matchMap[matchId];
-      if (!data) return;
-
-      const card = document.getElementById(`match-card-${matchId}`);
-
-      // Hide display parts
-      card.querySelector(`#display-header-${matchId}`).style.display = "none";
-      card.querySelector(`#display-info-${matchId}`).style.display = "none";
-      card.querySelector(`#teams-${matchId}`).style.display = "none";
-      card.querySelector(`#status-${matchId}`).style.display = "none";
-      card.querySelector(`#edit-btn-${matchId}`).style.display = "none";
-
-      // Insert edit form
-      const editForm = document.createElement("div");
-      editForm.id = `edit-form-${matchId}`;
-      editForm.className = "space-y-4";
-
-      const match = data.match;
-
-      editForm.innerHTML = `
-        <div>
-          <label class="block font-semibold mb-1" for="edit-title-${matchId}">Title</label>
-          <input id="edit-title-${matchId}" type="text" class="w-full border rounded p-2" value="${escapeHtml(match.title || "")}" />
-        </div>
-        <div>
-          <label class="block font-semibold mb-1" for="edit-dateTime-${matchId}">Date & Time</label>
-          <input id="edit-dateTime-${matchId}" type="datetime-local" class="w-full border rounded p-2" 
-            value="${match.dateTime ? toDatetimeLocal(match.dateTime) : ''}" />
-        </div>
-        <div>
-          <label class="block font-semibold mb-1" for="edit-totalPrice-${matchId}">Total Price (৳)</label>
-          <input id="edit-totalPrice-${matchId}" type="number" min="0" step="0.01" class="w-full border rounded p-2" value="${match.totalPrice || 0}" />
-        </div>
-        <div>
-          <label class="block font-semibold mb-1" for="edit-perGoal-${matchId}">Per Goal (৳)</label>
-          <input id="edit-perGoal-${matchId}" type="number" min="0" step="0.01" class="w-full border rounded p-2" value="${match.perGoal || 0}" />
-        </div>
-        <div>
-          <label class="block font-semibold mb-1" for="edit-entryFee-${matchId}">Entry Fee (৳)</label>
-          <input id="edit-entryFee-${matchId}" type="number" min="0" step="0.01" class="w-full border rounded p-2" value="${match.entryFee || 0}" />
-        </div>
-
-        <div class="flex justify-center gap-4 pt-2">
-          <button id="save-btn-${matchId}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
-            <i class="fas fa-save"></i> Save
-          </button>
-          <button id="cancel-btn-${matchId}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">
-            <i class="fas fa-times"></i> Cancel
-          </button>
-        </div>
-      `;
-
-      card.appendChild(editForm);
-
-      document.getElementById(`save-btn-${matchId}`).addEventListener("click", () => saveMatchEdits(matchId));
-      document.getElementById(`cancel-btn-${matchId}`).addEventListener("click", () => cancelEditMode(matchId));
-    }
-
-    // Convert ISO date string to datetime-local input value format: "YYYY-MM-DDTHH:mm"
-    function toDatetimeLocal(dateStr) {
-      const date = new Date(dateStr);
-      const offset = date.getTimezoneOffset();
-      const localDate = new Date(date.getTime() - offset * 60000);
-      return localDate.toISOString().slice(0,16);
-    }
-
-    // Save edited match data to Firestore
-    async function saveMatchEdits(matchId) {
-      const title = document.getElementById(`edit-title-${matchId}`).value.trim();
-      const dateTimeVal = document.getElementById(`edit-dateTime-${matchId}`).value;
-      const totalPrice = parseFloat(document.getElementById(`edit-totalPrice-${matchId}`).value);
-      const perGoal = parseFloat(document.getElementById(`edit-perGoal-${matchId}`).value);
-      const entryFee = parseFloat(document.getElementById(`edit-entryFee-${matchId}`).value);
-
-      if (!title) {
-        alert("Title cannot be empty");
-        return;
-      }
-      if (!dateTimeVal) {
-        alert("Date & Time cannot be empty");
-        return;
-      }
-      if (isNaN(totalPrice) || totalPrice < 0) {
-        alert("Total Price must be a valid non-negative number");
-        return;
-      }
-      if (isNaN(perGoal) || perGoal < 0) {
-        alert("Per Goal must be a valid non-negative number");
-        return;
-      }
-      if (isNaN(entryFee) || entryFee < 0) {
-        alert("Entry Fee must be a valid non-negative number");
-        return;
-      }
-
-      const updatedData = {
-        title,
-        dateTime: new Date(dateTimeVal).toISOString(),
-        totalPrice,
-        perGoal,
-        entryFee
-      };
-
-      try {
-        const matchRef = matchMap[matchId].matchRef;
-        await updateDoc(matchRef, updatedData);
-
-        // Update local cache
-        matchMap[matchId].match = {...matchMap[matchId].match, ...updatedData};
-
-        alert("Match updated successfully.");
-        exitEditMode(matchId);
-        refreshMatchCard(matchId);
-
-      } catch (error) {
-        alert("Failed to update match: " + error.message);
-        console.error(error);
-      }
-    }
-
-    // Cancel edit mode without saving
-    function cancelEditMode(matchId) {
-      exitEditMode(matchId);
-    }
-
-    // Exit edit mode and show display mode again
-    function exitEditMode(matchId) {
-      const card = document.getElementById(`match-card-${matchId}`);
-      const editForm = document.getElementById(`edit-form-${matchId}`);
-
-      if (editForm) editForm.remove();
-
-      // Show display parts again
-      card.querySelector(`#display-header-${matchId}`).style.display = "";
-      card.querySelector(`#display-info-${matchId}`).style.display = "";
-      card.querySelector(`#teams-${matchId}`).style.display = "";
-      card.querySelector(`#status-${matchId}`).style.display = "";
-      card.querySelector(`#edit-btn-${matchId}`).style.display = "";
-    }
-
-    // Refresh match card display with updated data
-    function refreshMatchCard(matchId) {
-      const card = document.getElementById(`match-card-${matchId}`);
-      const match = matchMap[matchId].match;
-
-      card.querySelector(`#title-${matchId}`).textContent = match.title || "Unknown Match";
-      card.querySelector(`#dateTime-${matchId}`).textContent = match.dateTime ? new Date(match.dateTime).toLocaleString() : "N/A";
-      card.querySelector(`#totalPrice-${matchId}`).textContent = match.totalPrice || 0;
-      card.querySelector(`#perGoal-${matchId}`).textContent = match.perGoal || 0;
-      card.querySelector(`#entryFee-${matchId}`).textContent = match.entryFee || 0;
     }
   </script>
 </body>
